@@ -6,7 +6,7 @@ A meta-prompt system that automates feature research and GitHub issue creation f
 
 Transforms this:
 ```bash
-dev-issue "implement real-time tournament bracket tracking"
+python dev-issue.py "implement real-time tournament bracket tracking"
 ```
 
 Into this:
@@ -20,49 +20,74 @@ Into this:
 
 ### 1. Installation
 ```bash
-# Download and run setup script
-curl -sSL [setup-script-url] | bash
+# Clone or download the generator
+git clone [repository-url] ~/.dev-issue-generator
+cd ~/.dev-issue-generator
 
-# Or manual setup:
-mkdir ~/.dev-issue-generator && cd ~/.dev-issue-generator
-# Copy artifacts: meta-prompt-template.md, dev-issue, setup files
-chmod +x dev-issue
+# Ensure Python 3.7+ is installed
+python --version
+
+# No additional Python packages required - uses only standard library
 ```
 
 ### 2. Configuration
 ```bash
-# Interactive setup for your project
-./dev-issue init
+# Navigate to your project directory
+cd /path/to/your/project
 
-# Or copy the Pokemon TCG sample config and modify
-cp dev-automation.config.json my-project.config.json
+# Interactive setup for your project
+python ~/.dev-issue-generator/dev-issue.py init
 ```
 
 ### 3. Generate Your First Issue
 ```bash
 # Basic usage
-./dev-issue "implement user authentication system"
+python ~/.dev-issue-generator/dev-issue.py "implement user authentication system"
 
 # Template-specific shortcuts
-./tcg-data "optimize Limitless API sync pipeline"
-./tcg-ui "improve dashboard performance metrics"
-./tcg-api "add tournament bracket endpoints"
-./tcg-perf "implement Redis caching layer"
+python ~/.dev-issue-generator/dev-issue.py --template data "optimize Limitless API sync pipeline"
+python ~/.dev-issue-generator/dev-issue.py --template ui "improve dashboard performance metrics"
+python ~/.dev-issue-generator/dev-issue.py --template api "add tournament bracket endpoints"
+python ~/.dev-issue-generator/dev-issue.py --template perf "implement Redis caching layer"
+```
+
+### 4. Optional: Create Global Command
+**Windows:**
+Create `dev-issue.bat` in a directory in your PATH:
+```batch
+@echo off
+python "C:\path\to\.dev-issue-generator\dev-issue.py" %*
+```
+
+**Mac/Linux:**
+Create a symlink or alias:
+```bash
+# Symlink approach
+ln -s ~/.dev-issue-generator/dev-issue.py /usr/local/bin/dev-issue
+
+# Or add alias to your shell profile
+echo 'alias dev-issue="python ~/.dev-issue-generator/dev-issue.py"' >> ~/.bashrc
 ```
 
 ## 📁 Project Structure
 
 ```
 ~/.dev-issue-generator/
-├── dev-issue                      # Main CLI script
-├── meta-prompt-template.md         # Universal meta-prompt
+├── dev-issue.py                    # Main Python script
+├── meta-prompt-template.md         # Universal meta-prompt template
+└── README.md                       # This file
+
+# Per-project files (created in your project directory):
+your-project/
 ├── dev-automation.config.json      # Project configuration
-├── generated-issues/               # Output directory
-├── github-integration.sh           # GitHub issue creation helper
-└── tcg-* scripts                   # Template shortcuts
+└── generated-issues/               # Output directory
+    ├── 20240714_123456_feature.md  # Generated specifications
+    └── ...
 ```
 
 ## 🛠️ Configuration
+
+Each project gets its own `dev-automation.config.json` file created by running `python dev-issue.py init`.
 
 ### Project Settings
 ```json
@@ -84,7 +109,24 @@ cp dev-automation.config.json my-project.config.json
   "llm_settings": {
     "default_provider": "gemini",     # gemini, claude-code, openai
     "output_format": "structured",    # structured, conversational, json
-    "research_depth": "comprehensive" # brief, standard, comprehensive
+    "research_depth": "standard",     # brief, standard, comprehensive
+    "temperature": 0.7
+  }
+}
+```
+
+### GitHub Integration
+```json
+{
+  "github": {
+    "repo_owner": "your-username",
+    "repo_name": "your-repo",
+    "default_project": "Your-Project-Board-Name",
+    "default_labels": ["auto-generated", "needs-review", "enhancement"]
+  },
+  "automation": {
+    "auto_create_issues": true,       # Enable automatic GitHub issue creation
+    "auto_assign": false
   }
 }
 ```
@@ -95,7 +137,8 @@ cp dev-automation.config.json my-project.config.json
   "templates": {
     "ui_feature": "Focus on user experience, responsive design...",
     "api_feature": "Focus on performance, security, scalability...",
-    "data_pipeline": "Focus on data processing, ETL, validation..."
+    "data_feature": "Focus on data processing, ETL, validation...",
+    "perf_feature": "Focus on optimization, caching, performance..."
   }
 }
 ```
@@ -105,97 +148,81 @@ cp dev-automation.config.json my-project.config.json
 ### Basic Feature Generation
 ```bash
 # Generate comprehensive research for any feature
-./dev-issue "implement OAuth2 authentication"
-./dev-issue "add real-time notifications"
-./dev-issue "optimize database query performance"
+python dev-issue.py "implement OAuth2 authentication"
+python dev-issue.py "add real-time notifications"
+python dev-issue.py "optimize database query performance"
 ```
 
 ### Template-Specific Generation
 ```bash
 # UI/UX features
-./dev-issue ui "redesign user dashboard with accessibility improvements"
+python dev-issue.py --template ui "redesign user dashboard with accessibility improvements"
 
 # Backend/API features  
-./dev-issue api "implement rate limiting with Redis"
+python dev-issue.py --template api "implement rate limiting with Redis"
 
 # Data pipeline features
-./dev-issue data "build ETL pipeline for external API integration"
+python dev-issue.py --template data "build ETL pipeline for external API integration"
 
 # Performance optimization
-./dev-issue perf "optimize React bundle size and loading speed"
-```
-
-### Pokemon TCG App Examples
-```bash
-# Tournament data features
-./tcg-data "implement incremental sync for Limitless API tournament results"
-
-# Meta analysis features
-./tcg-ui "build interactive matchup matrix with win rate visualization"
-
-# Performance features
-./tcg-perf "optimize meta snapshot calculations for real-time updates"
-
-# API features
-./tcg-api "add deck recommendation endpoints with personalization"
+python dev-issue.py --template perf "optimize React bundle size and loading speed"
 ```
 
 ### Advanced Usage
 ```bash
 # Override LLM provider
-LLM_PROVIDER=claude-code ./dev-issue "implement microservices architecture"
+python dev-issue.py --provider claude-code "implement microservices architecture"
 
-# Use custom config
-CONFIG_FILE=./enterprise-project.json ./dev-issue "add SAML SSO integration"
+# Use custom config file
+python dev-issue.py --config ./enterprise-project.json "add SAML SSO integration"
 
-# Dry run (generate prompt without executing)
-./dev-issue --dry-run "implement blockchain integration"
+# Dry run (generate prompt without executing LLM)
+python dev-issue.py --dry-run "implement blockchain integration"
 ```
 
 ## 🔧 GitHub Integration
 
+### Automatic Issue Creation
+When `auto_create_issues` is enabled in your config:
+```bash
+# This will automatically create a GitHub issue with full specification
+python dev-issue.py "implement user roles and permissions"
+```
+
 ### Manual Issue Creation
 ```bash
-# Generate issue specification
-./dev-issue "implement user roles and permissions" > issue.md
+# Generate specification file
+python dev-issue.py "implement user roles and permissions"
 
-# Create GitHub issue
-gh issue create --body-file issue.md --label "enhancement,auto-generated"
+# Use the generated file with GitHub CLI
+gh issue create --body-file generated-issues/[timestamp]_feature.md --label "enhancement"
 ```
 
-### Automated Integration (Future)
+### GitHub CLI Setup
 ```bash
-# Direct issue creation (when auto_create_issues: true)
-./dev-issue "add two-factor authentication"
-# → Automatically creates GitHub issue with research and specifications
+# Install GitHub CLI and authenticate
+gh auth login
+
+# Ensure you have project scope for automatic issue creation
+gh auth refresh --scopes repo,project
 ```
 
-## 🎨 Customization
+## 🎨 Multi-Project Workflow
 
-### Adding New Templates
-```json
-{
-  "templates": {
-    "security": "Focus on authentication, authorization, data protection...",
-    "mobile": "Focus on responsive design, touch interfaces, offline support...",
-    "devops": "Focus on CI/CD, deployment automation, monitoring..."
-  }
-}
-```
+The beauty of this system is that you can use one installation across multiple projects:
 
-### Creating Custom Commands
 ```bash
-#!/bin/bash
-# my-security (custom security feature generator)
-./dev-issue security "$*"
-```
+# Project A
+cd ~/projects/my-web-app
+python ~/.dev-issue-generator/dev-issue.py init  # Creates config for this project
+python ~/.dev-issue-generator/dev-issue.py "add user authentication"
 
-### Multi-Project Management
-```bash
-# Different configs for different projects
-alias tcg-issue="CONFIG_FILE=./tcg-project.json ./dev-issue"
-alias ecom-issue="CONFIG_FILE=./ecommerce-project.json ./dev-issue"
-alias blog-issue="CONFIG_FILE=./blog-project.json ./dev-issue"
+# Project B  
+cd ~/projects/my-mobile-app
+python ~/.dev-issue-generator/dev-issue.py init  # Creates different config for this project
+python ~/.dev-issue-generator/dev-issue.py "implement offline sync"
+
+# Each project gets its own config and generated-issues folder
 ```
 
 ## 🔍 Output Format
@@ -214,24 +241,29 @@ Each generated issue includes:
 ## 🛡️ Dependencies
 
 ### Required
-- `jq` - JSON processor for configuration parsing
-- LLM CLI tool (one of):
-  - `gemini-cli` for Google Gemini
+- **Python 3.7+**: Uses only standard library (no pip packages needed)
+- **LLM CLI tool** (one of):
+  - `gemini` (npm package: `npm install -g @google/generative-ai-cli`)
   - `claude-code` for Anthropic Claude  
   - `openai` for OpenAI GPT
 
 ### Optional
-- `gh` - GitHub CLI for automated issue creation
-- `git` - For repository context and integration
+- **GitHub CLI (`gh`)**: For automated issue creation
+- **Git**: For repository context (auto-detected)
+
+### Installation Notes
+**Windows**: Ensure Python is in your PATH. NPM-installed tools like `gemini` need the `.cmd` extension but this is handled automatically.
+
+**Mac/Linux**: Standard Python installation should work out of the box.
 
 ## 🚧 Roadmap
 
-- [ ] **GitHub Actions Integration** - Trigger issue generation from repository events
-- [ ] **Template Marketplace** - Share and discover project templates
-- [ ] **Multi-LLM Comparison** - Generate issues with multiple providers
+- [ ] **Multiple LLM Comparison** - Generate issues with multiple providers and compare
+- [ ] **Template Marketplace** - Share and discover project-specific templates
 - [ ] **Progress Tracking** - Monitor implementation progress and outcomes
 - [ ] **Team Collaboration** - Shared configurations and team workflows
 - [ ] **IDE Integration** - VSCode extension for in-editor issue generation
+- [ ] **CI/CD Integration** - Trigger issue generation from repository events
 
 ## 🤝 Contributing
 
@@ -240,7 +272,7 @@ This is a universal system designed to work across any project type. Contributio
 - New template categories
 - LLM provider integrations  
 - Output format improvements
-- GitHub workflow automation
+- Cross-platform compatibility
 - Documentation and examples
 
 ## 📄 License
@@ -249,4 +281,4 @@ MIT License - Use this system for any project, commercial or personal.
 
 ---
 
-**🎯 The Goal**: Fix problems at the lowest value stage through better upfront research and planning. Turn feature ideas into well-researched, actionable development tasks in minutes instead of hours.
+**🎯 The Goal**: Transform feature ideas into well-researched, actionable development tasks in minutes instead of hours. Fix problems at the planning stage through comprehensive upfront research and technical specification.
