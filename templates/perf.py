@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-tcg-api.py - API Feature Generator for Pokemon TCG App
-Usage: python tcg-api.py [feature description]
+perf.py - Performance Feature Generator
+Usage: python perf.py [feature description]
 """
 import subprocess
 import sys
@@ -9,29 +9,26 @@ from pathlib import Path
 
 def main():
     """
-    Wrapper script to call dev-issue.py with the 'api' template.
+    Wrapper script to call dev-issue.py with the 'perf' template.
     """
     if len(sys.argv) < 2:
-        print("Usage: python tcg-api.py 'feature description'")
-        print("Example: python tcg-api.py 'implement tournament bracket API endpoints'")
+        print("Usage: python perf.py 'feature description'")
+        print("Example: python perf.py 'implement caching for performance'")
         sys.exit(1)
 
     feature_description = ' '.join(sys.argv[1:])
     
-    # Construct the path to the main dev-issue.py script
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent.parent
     dev_issue_script = script_dir / "dev-issue.py"
 
-    # Build the command to execute
     command = [
         sys.executable, 
         str(dev_issue_script), 
         "--template", 
-        "api", 
+        "perf", 
         feature_description
     ]
 
-    # Execute the main script
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-tcg-perf.py - Performance Feature Generator for Pokemon TCG App
-Usage: python tcg-perf.py [feature description]
+ui.py - UI Feature Generator
+Usage: python ui.py [feature description]
 """
 import subprocess
 import sys
@@ -9,23 +9,23 @@ from pathlib import Path
 
 def main():
     """
-    Wrapper script to call dev-issue.py with the 'perf' template.
+    Wrapper script to call dev-issue.py with the 'ui' template.
     """
     if len(sys.argv) < 2:
-        print("Usage: python tcg-perf.py 'feature description'")
-        print("Example: python tcg-perf.py 'implement Redis caching for meta calculations'")
+        print("Usage: python ui.py 'feature description'")
+        print("Example: python ui.py 'improve dashboard loading performance'")
         sys.exit(1)
 
     feature_description = ' '.join(sys.argv[1:])
     
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent.parent
     dev_issue_script = script_dir / "dev-issue.py"
 
     command = [
         sys.executable, 
         str(dev_issue_script), 
         "--template", 
-        "perf", 
+        "ui", 
         feature_description
     ]
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-tcg-ui.py - UI Feature Generator for Pokemon TCG App
-Usage: python tcg-ui.py [feature description]
+data.py - Data Pipeline Feature Generator
+Usage: python data.py [feature description]
 """
 import subprocess
 import sys
@@ -9,23 +9,23 @@ from pathlib import Path
 
 def main():
     """
-    Wrapper script to call dev-issue.py with the 'ui' template.
+    Wrapper script to call dev-issue.py with the 'data' template.
     """
     if len(sys.argv) < 2:
-        print("Usage: python tcg-ui.py 'feature description'")
-        print("Example: python tcg-ui.py 'improve dashboard loading performance'")
+        print("Usage: python data.py 'feature description'")
+        print("Example: python data.py 'optimize data processing pipeline'")
         sys.exit(1)
 
     feature_description = ' '.join(sys.argv[1:])
     
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent.parent
     dev_issue_script = script_dir / "dev-issue.py"
 
     command = [
         sys.executable, 
         str(dev_issue_script), 
         "--template", 
-        "ui", 
+        "data", 
         feature_description
     ]
 

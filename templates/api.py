@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-tcg-data.py - Data Pipeline Feature Generator for Pokemon TCG App
-Usage: python tcg-data.py [feature description]
+api.py - API Feature Generator
+Usage: python api.py [feature description]
 """
 import subprocess
 import sys
@@ -9,26 +9,29 @@ from pathlib import Path
 
 def main():
     """
-    Wrapper script to call dev-issue.py with the 'data' template.
+    Wrapper script to call dev-issue.py with the 'api' template.
     """
     if len(sys.argv) < 2:
-        print("Usage: python tcg-data.py 'feature description'")
-        print("Example: python tcg-data.py 'optimize Limitless API sync pipeline'")
+        print("Usage: python api.py 'feature description'")
+        print("Example: python api.py 'implement user authentication endpoints'")
         sys.exit(1)
 
     feature_description = ' '.join(sys.argv[1:])
     
-    script_dir = Path(__file__).parent
+    # Construct the path to the main dev-issue.py script
+    script_dir = Path(__file__).parent.parent
     dev_issue_script = script_dir / "dev-issue.py"
 
+    # Build the command to execute
     command = [
         sys.executable, 
         str(dev_issue_script), 
         "--template", 
-        "data", 
+        "api", 
         feature_description
     ]
 
+    # Execute the main script
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
