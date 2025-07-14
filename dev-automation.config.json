@@ -1,0 +1,52 @@
+﻿{
+    "automation":  {
+                       "auto_assign":  false,
+                       "auto_create_issues":  true,
+                       "notification_webhooks":  [
+
+                                                 ]
+                   },
+    "project":  {
+                    "name":  "Pokemon TCG Meta Analysis Dashboard",
+                    "architecture":  "Backend API + Frontend Dashboard + Data Pipeline Architecture with tournament data ingestion, real-time meta calculations, and personalized recommendations",
+                    "target_users":  "Competitive Pokemon TCG players seeking actionable meta intelligence, deck builders, tournament players preparing for events",
+                    "tech_stack":  ".NET Core 8, ASP.NET Core Web API, Entity Framework Core, PostgreSQL, Next.js 14, React 18, Tailwind CSS, shadcn/ui, Recharts, Azure hosting",
+                    "constraints":  "Azure hosting environment, external API rate limits (Limitless API, Pokemon TCG API), real-time performance requirements (3-minute user experience goal), desktop-first analytical workflows, tournament data accuracy requirements",
+                    "context":  "Tournament-data-driven competitive analysis platform that provides meta intelligence and deck recommendations for competitive Pokemon TCG players",
+                    "domain_keywords":  [
+                                            "tournament meta",
+                                            "deck archetypes",
+                                            "matchup analysis",
+                                            "win rates",
+                                            "meta snapshots",
+                                            "competitive formats",
+                                            "deck recommendations",
+                                            "card legality",
+                                            "rotation schedules",
+                                            "tier lists"
+                                        ]
+                },
+    "templates":  {
+                      "api_feature":  "Focus on high-performance data retrieval, efficient database queries, API response optimization, rate limiting, caching strategies, and integration with external tournament data sources.",
+                      "perf_feature":  "Focus on sub-second dashboard loading, efficient meta calculation algorithms, database query optimization, caching strategies, and Azure service optimization for cost and performance.",
+                      "ui_feature":  "Focus on competitive player workflows, analytical dashboard design, data visualization best practices, desktop-first responsive design, and information density optimization for quick decision-making.",
+                      "data_feature":  "Focus on tournament data ingestion, processing large datasets from Limitless API, real-time sync strategies, and meta calculation optimization. Consider batch processing, incremental updates, and data validation."
+                  },
+    "llm_settings":  {
+                         "output_format":  "structured",
+                         "research_depth":  "comprehensive",
+                         "default_provider":  "gemini",
+                         "temperature":  0.7
+                     },
+    "github": {
+        "issue_template": "feature_request.md",
+        "repo_owner": "StephenDMay",
+        "repo_name": "PTCG-MetaBuddy",
+        "default_project": "users/StephenDMay/projects/1",
+        "default_labels": [
+            "auto-generated",
+            "needs-review",
+            "enhancement"
+        ]
+    }
+}
