@@ -101,6 +101,16 @@ Provide your analysis in the following structured format:
 **Priority**: [High/Medium/Low] 
 **Category**: [feature/enhancement/bugfix/technical-debt]
 
+## IMPLEMENTATION DETAILS
+- Specific files to create/modify
+- Key classes/functions to implement  
+- Exact CLI command structure
+- Clear acceptance criteria for "done"
+
+## SCOPE BOUNDARIES
+What is explicitly IN scope for this feature?
+What is explicitly OUT of scope and should be separate features?
+
 ## ACCEPTANCE CRITERIA
 - [ ] [Testable requirement 1]
 - [ ] [Testable requirement 2]  
