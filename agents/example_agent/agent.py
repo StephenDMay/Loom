@@ -1,13 +1,12 @@
-# agent.py
+from agents.base_agent import BaseAgent
 
-class ExampleAgent:
+class ExampleAgent(BaseAgent):
     """
-    This is a simple example of an agent.
-    It has a 'run' method that takes a task description and returns a message.
+    This is a simple example of an agent that inherits from BaseAgent.
     """
-    def run(self, task_description: str) -> str:
+    def execute(self, task_description: str, *args, **kwargs) -> str:
         """
-        Executes the agent's task.
+        Executes the agent's task by taking a task description.
 
         Args:
             task_description: A string describing the task to be performed.
