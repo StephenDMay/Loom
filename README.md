@@ -21,8 +21,8 @@ Into this:
 ### 1. Installation
 ```bash
 # Clone or download the generator
-git clone [repository-url] ~/.dev-issue-generator
-cd ~/.dev-issue-generator
+git clone [repository-url] ~/AutoDev
+cd ~/AutoDev
 
 # Ensure Python 3.7+ is installed
 python --version
@@ -36,19 +36,19 @@ python --version
 cd /path/to/your/project
 
 # Interactive setup for your project
-python ~/.dev-issue-generator/dev-issue.py init
+python ~/AutoDev/dev-issue.py init
 ```
 
 ### 3. Generate Your First Issue
 ```bash
 # Basic usage
-python ~/.dev-issue-generator/dev-issue.py "implement user authentication system"
+python ~/AutoDev/dev-issue.py "implement user authentication system"
 
 # Template-specific shortcuts
-python ~/.dev-issue-generator/dev-issue.py --template data "optimize Limitless API sync pipeline"
-python ~/.dev-issue-generator/dev-issue.py --template ui "improve dashboard performance metrics"
-python ~/.dev-issue-generator/dev-issue.py --template api "add tournament bracket endpoints"
-python ~/.dev-issue-generator/dev-issue.py --template perf "implement Redis caching layer"
+python ~/AutoDev/dev-issue.py --template data "optimize Limitless API sync pipeline"
+python ~/AutoDev/dev-issue.py --template ui "improve dashboard performance metrics"
+python ~/AutoDev/dev-issue.py --template api "add tournament bracket endpoints"
+python ~/AutoDev/dev-issue.py --template perf "implement Redis caching layer"
 ```
 
 ### 4. Optional: Create Global Command
@@ -56,23 +56,23 @@ python ~/.dev-issue-generator/dev-issue.py --template perf "implement Redis cach
 Create `dev-issue.bat` in a directory in your PATH:
 ```batch
 @echo off
-python "C:\path\to\.dev-issue-generator\dev-issue.py" %*
+python "C:\path\to\AutoDev\dev-issue.py" %*
 ```
 
 **Mac/Linux:**
 Create a symlink or alias:
 ```bash
 # Symlink approach
-ln -s ~/.dev-issue-generator/dev-issue.py /usr/local/bin/dev-issue
+ln -s ~/AutoDev/dev-issue.py /usr/local/bin/dev-issue
 
 # Or add alias to your shell profile
-echo 'alias dev-issue="python ~/.dev-issue-generator/dev-issue.py"' >> ~/.bashrc
+echo 'alias dev-issue="python ~/AutoDev/dev-issue.py"' >> ~/.bashrc
 ```
 
 ## 📁 Project Structure
 
 ```
-~/.dev-issue-generator/
+~/AutoDev/
 ├── dev-issue.py                    # Main Python script
 ├── meta-prompt-template.md         # Universal meta-prompt template
 └── README.md                       # This file
@@ -214,13 +214,13 @@ The beauty of this system is that you can use one installation across multiple p
 ```bash
 # Project A
 cd ~/projects/my-web-app
-python ~/.dev-issue-generator/dev-issue.py init  # Creates config for this project
-python ~/.dev-issue-generator/dev-issue.py "add user authentication"
+python ~/AutoDev/dev-issue.py init  # Creates config for this project
+python ~/AutoDev/dev-issue.py "add user authentication"
 
 # Project B  
 cd ~/projects/my-mobile-app
-python ~/.dev-issue-generator/dev-issue.py init  # Creates different config for this project
-python ~/.dev-issue-generator/dev-issue.py "implement offline sync"
+python ~/AutoDev/dev-issue.py init  # Creates different config for this project
+python ~/AutoDev/dev-issue.py "implement offline sync"
 
 # Each project gets its own config and generated-issues folder
 ```
