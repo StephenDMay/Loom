@@ -1,0 +1,5 @@
+{
+  "name": "Example Agent",
+  "version": "0.1.0",
+  "description": "A simple example agent that echoes the task description."
+}
