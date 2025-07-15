@@ -1,7 +1,7 @@
 {
   "project": {
     "name": "AutoDev",
-    "context": "We explored building a flexible system that automates the software development lifecycle - from initial research discussions through to deployed code - where developers can use ANY AI model or tool at ANY stage of the process.",
+    "context": "A flexible system that automates the software development lifecycle - from initial research discussions through to deployed code - where developers can use ANY AI model or tool at ANY stage of the process.",
     "tech_stack": "Python, markdown",
     "architecture": "Open orchestration",
     "target_users": "Developers",
@@ -10,7 +10,7 @@
   "github": {
     "repo_owner": "StephenDMay",
     "repo_name": "AutoDev",
-    "default_project": "",
+    "default_project": "AutoDev-Board",
     "default_labels": [
       "auto-generated",
       "needs-review"
@@ -24,7 +24,7 @@
   },
   "templates": {},
   "automation": {
-    "auto_create_issues": false,
-    "auto_assign": false
+    "auto_create_issues": true,
+    "auto_assign": true
   }
 }

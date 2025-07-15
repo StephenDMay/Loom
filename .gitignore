@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# IDEs
+.idea/
+.vscode/
+
+# Generated issues
+generated-issues/
+
+# Keep documentation
+!documentation/
