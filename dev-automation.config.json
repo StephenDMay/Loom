@@ -1,0 +1,30 @@
+{
+  "project": {
+    "name": "AutoDev",
+    "context": "We explored building a flexible system that automates the software development lifecycle - from initial research discussions through to deployed code - where developers can use ANY AI model or tool at ANY stage of the process.",
+    "tech_stack": "Python, markdown",
+    "architecture": "Open orchestration",
+    "target_users": "Developers",
+    "constraints": "Model API Differences, Context Management, Output Consistency, Error Handling & Reliability, State Management, Security & Privacy, Cost Predictability, Performance Optimization, Human-in-the-Loop Challenges, Project Understanding"
+  },
+  "github": {
+    "repo_owner": "StephenDMay",
+    "repo_name": "AutoDev",
+    "default_project": "",
+    "default_labels": [
+      "auto-generated",
+      "needs-review"
+    ]
+  },
+  "llm_settings": {
+    "default_provider": "gemini",
+    "output_format": "structured",
+    "research_depth": "standard",
+    "temperature": 0.7
+  },
+  "templates": {},
+  "automation": {
+    "auto_create_issues": false,
+    "auto_assign": false
+  }
+}
