@@ -1,5 +1,5 @@
 {
-  "name": "ExampleAgent",
+  "name": "example_agent",
   "version": "0.1.0",
   "description": "A sample agent implementation.",
   "entry_point": "agent.py",
