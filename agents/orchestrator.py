@@ -2,10 +2,11 @@ import os
 import json
 import importlib.util
 from agents.base_agent import BaseAgent
+from core.config_manager import config_manager
 
 class AgentOrchestrator:
     def __init__(self):
-        self.agent_dir = os.path.dirname(os.path.abspath(__file__))
+        self.agent_dir = config_manager.get("agents.directory", os.path.dirname(os.path.abspath(__file__)))
         self.agents = {}
         self.load_agents()
 
@@ -34,7 +35,8 @@ class AgentOrchestrator:
                 
                 agent_class = getattr(module, class_name)
                 if issubclass(agent_class, BaseAgent):
-                    self.agents[manifest['name']] = agent_class()
+                    agent_config = config_manager.get(f"agents.{manifest['name']}", {})
+                    self.agents[manifest['name']] = agent_class(config=agent_config)
                 else:
                     print(f"Error loading agent {agent_name}: {class_name} is not a subclass of BaseAgent.")
             except Exception as e:
