@@ -264,13 +264,26 @@ CONFIGURATION:
         with open(self.meta_prompt_file, 'r') as f:
             template = f.read()
             
+        # Get required values from config, exit if missing
+        required_keys = [
+            'project.context', 'project.tech_stack', 'project.architecture',
+            'project.target_users', 'project.constraints'
+        ]
+        config_values = {}
+        for key in required_keys:
+            value = config_manager.get(key)
+            if value is None:
+                print(f"Error: Missing required configuration key: '{key}' in {self.config_file}")
+                sys.exit(1)
+            config_values[key] = value
+
         # Substitute template variables
-        template = template.replace('[PROJECT_CONTEXT_PLACEHOLDER]', config_manager.get('project.context', ''))
-        template = template.replace('[TECH_STACK_PLACEHOLDER]', config_manager.get('project.tech_stack', ''))
-        template = template.replace('[ARCHITECTURE_PLACEHOLDER]', config_manager.get('project.architecture', ''))
-        template = template.replace('[USER_BASE_PLACEHOLDER]', config_manager.get('project.target_users', ''))
+        template = template.replace('[PROJECT_CONTEXT_PLACEHOLDER]', config_values['project.context'])
+        template = template.replace('[TECH_STACK_PLACEHOLDER]', config_values['project.tech_stack'])
+        template = template.replace('[ARCHITECTURE_PLACEHOLDER]', config_values['project.architecture'])
+        template = template.replace('[USER_BASE_PLACEHOLDER]', config_values['project.target_users'])
         
-        constraints = config_manager.get('project.constraints', '')
+        constraints = config_values['project.constraints']
         if template_type and config_manager.get(f'templates.{template_type}'):
             template_context = config_manager.get(f'templates.{template_type}')
             constraints = f"{constraints}\n\nTEMPLATE-SPECIFIC CONTEXT: {template_context}"
@@ -290,15 +303,22 @@ CONFIGURATION:
         
         # Generate timestamp for filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_feature = re.sub(r'[\w\-_]', '_', feature_description)
-        safe_feature = safe_feature[:50]  # Limit length
+        safe_feature = re.sub(r'[^\w\-_]', '_', feature_description)
+        safe_feature = safe_feature[:50]
         output_file = self.output_dir / f"{timestamp}_{safe_feature}.md"
         
         # Execute LLM and save output
         print("Processing with LLM...")
         llm_provider = provider or config_manager.get('llm_settings.default_provider')
-        result = self.invoke_llm(template, llm_provider)
-        
+        raw_result = self.invoke_llm(template, llm_provider)
+
+        # Clean the result
+        result = raw_result
+        feature_marker = "# FEATURE:"
+        marker_pos = raw_result.find(feature_marker)
+        if marker_pos > 0:
+            result = raw_result[marker_pos:]
+
         with open(output_file, 'w') as f:
             f.write(result)
         print(f"Issue specification saved to: {output_file}")
