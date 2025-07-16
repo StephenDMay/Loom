@@ -6,6 +6,8 @@ from core.config_manager import config_manager
 
 class AgentOrchestrator:
     def __init__(self):
+        # Load the global config first
+        config_manager.load_config('dev-automation.config.json')
         self.agent_dir = config_manager.get("agents.directory", os.path.dirname(os.path.abspath(__file__)))
         self.agents = {}
         self.load_agents()
@@ -28,6 +30,13 @@ class AgentOrchestrator:
                 entry_point = manifest['entry_point']
                 class_name = manifest['class_name']
                 
+                # Resolve agent configuration
+                agent_config_path = os.path.join(agent_path, 'config.json')
+                if os.path.exists(agent_config_path):
+                    resolved_config = config_manager.get_merged_config(agent_config_path)
+                else:
+                    resolved_config = config_manager.get_config()
+
                 module_path = os.path.join(agent_path, entry_point)
                 spec = importlib.util.spec_from_file_location(agent_name, module_path)
                 module = importlib.util.module_from_spec(spec)
@@ -35,8 +44,7 @@ class AgentOrchestrator:
                 
                 agent_class = getattr(module, class_name)
                 if issubclass(agent_class, BaseAgent):
-                    agent_config = config_manager.get(f"agents.{manifest['name']}", {})
-                    self.agents[manifest['name']] = agent_class(config=agent_config)
+                    self.agents[manifest['name']] = agent_class(config=resolved_config)
                 else:
                     print(f"Error loading agent {agent_name}: {class_name} is not a subclass of BaseAgent.")
             except Exception as e:

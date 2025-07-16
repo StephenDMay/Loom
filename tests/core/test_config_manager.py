@@ -14,33 +14,51 @@ class TestConfigManager(unittest.TestCase):
         os.makedirs(self.test_dir, exist_ok=True)
 
         self.valid_config_path = os.path.join(self.test_dir, 'valid_config.json')
+        self.override_config_path = os.path.join(self.test_dir, 'override_config.json')
         self.malformed_config_path = os.path.join(self.test_dir, 'malformed_config.json')
         self.non_existent_config_path = os.path.join(self.test_dir, 'non_existent.json')
 
         self.config_data = {
             "key1": "value1",
             "nested": {
-                "key2": "value2"
+                "key2": "value2",
+                "key3": "value3"
             },
             "agent": {
                 "settings": {
-                    "model": "gemini-pro"
+                    "model": "gemini-pro",
+                    "temperature": 0.5
                 }
             }
+        }
+        
+        self.override_config_data = {
+            "key1": "override_value1",
+            "nested": {
+                "key2": "override_value2"
+            },
+            "agent": {
+                "settings": {
+                    "model": "gemini-ultra"
+                }
+            },
+            "new_key": "new_value"
         }
 
         with open(self.valid_config_path, 'w') as f:
             json.dump(self.config_data, f)
+            
+        with open(self.override_config_path, 'w') as f:
+            json.dump(self.override_config_data, f)
 
         with open(self.malformed_config_path, 'w') as f:
             f.write('{"key": "value",}')
 
     def tearDown(self):
         # Clean up created files
-        if os.path.exists(self.valid_config_path):
-            os.remove(self.valid_config_path)
-        if os.path.exists(self.malformed_config_path):
-            os.remove(self.malformed_config_path)
+        for path in [self.valid_config_path, self.override_config_path, self.malformed_config_path]:
+            if os.path.exists(path):
+                os.remove(path)
         if os.path.exists(self.test_dir):
             os.rmdir(self.test_dir)
         # Reset singleton after tests
@@ -54,11 +72,12 @@ class TestConfigManager(unittest.TestCase):
 
     def test_load_config_success(self):
         self.config_manager.load_config(self.valid_config_path)
-        self.assertEqual(self.config_manager._config, self.config_data)
+        self.assertEqual(self.config_manager.get_config(), self.config_data)
 
     def test_load_config_file_not_found(self):
-        with self.assertRaises(FileNotFoundError):
-            self.config_manager.load_config(self.non_existent_config_path)
+        # Should not raise an error, just result in an empty config
+        self.config_manager.load_config(self.non_existent_config_path)
+        self.assertEqual(self.config_manager.get_config(), {})
 
     def test_load_config_malformed_json(self):
         with self.assertRaises(ValueError):
@@ -81,6 +100,42 @@ class TestConfigManager(unittest.TestCase):
         self.config_manager.load_config(self.valid_config_path)
         default_value = "default"
         self.assertEqual(self.config_manager.get("non.existent.key", default=default_value), default_value)
+
+    def test_deep_merge(self):
+        merged = ConfigManager._deep_merge(self.config_data, self.override_config_data)
+        
+        # Test overrides
+        self.assertEqual(merged['key1'], 'override_value1')
+        self.assertEqual(merged['nested']['key2'], 'override_value2')
+        self.assertEqual(merged['agent']['settings']['model'], 'gemini-ultra')
+        
+        # Test preservation of base keys
+        self.assertEqual(merged['nested']['key3'], 'value3')
+        self.assertEqual(merged['agent']['settings']['temperature'], 0.5)
+        
+        # Test addition of new keys
+        self.assertEqual(merged['new_key'], 'new_value')
+
+    def test_get_merged_config(self):
+        self.config_manager.load_config(self.valid_config_path)
+        merged_config = self.config_manager.get_merged_config(self.override_config_path)
+        
+        # Verify the merged result
+        self.assertEqual(merged_config['key1'], 'override_value1')
+        self.assertEqual(merged_config['nested']['key2'], 'override_value2')
+        self.assertEqual(merged_config['nested']['key3'], 'value3')
+        self.assertEqual(merged_config['agent']['settings']['model'], 'gemini-ultra')
+        self.assertEqual(merged_config['agent']['settings']['temperature'], 0.5)
+        self.assertEqual(merged_config['new_key'], 'new_value')
+        
+        # Verify the original config is not modified
+        self.assertEqual(self.config_manager.get_config(), self.config_data)
+
+    def test_get_merged_config_with_non_existent_override(self):
+        self.config_manager.load_config(self.valid_config_path)
+        merged_config = self.config_manager.get_merged_config(self.non_existent_config_path)
+        self.assertEqual(merged_config, self.config_data)
+
 
 if __name__ == '__main__':
     unittest.main()
