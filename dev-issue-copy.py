@@ -15,8 +15,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from core.config_manager import config_manager
-
 
 class DevIssueGenerator:
     def __init__(self):
@@ -75,7 +73,10 @@ CONFIGURATION:
             return  # Skip dependency check if no config exists yet
             
         try:
-            provider = config_manager.get('llm_settings.default_provider', 'gemini')
+            with open(self.config_file, 'r') as f:
+                config = json.load(f)
+                
+            provider = config.get('llm_settings', {}).get('default_provider', 'gemini')
             
             # Check if the LLM provider command exists
             try:
@@ -155,6 +156,20 @@ CONFIGURATION:
         print(f"Configuration created at {self.config_file}")
         print("You can edit this file to customize templates and automation settings")
 
+    def load_config(self) -> Dict:
+        """Load and validate configuration"""
+        if not self.config_file.exists():
+            print(f"Configuration file not found: {self.config_file}")
+            print("Run 'python dev-issue.py init' to create a configuration file")
+            sys.exit(1)
+            
+        try:
+            with open(self.config_file, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"Invalid JSON in configuration file: {self.config_file}")
+            sys.exit(1)
+
     def invoke_llm(self, prompt: str, provider: str) -> str:
         """Execute LLM with the given prompt"""
         print(f"Executing prompt with provider: {provider}")
@@ -186,18 +201,19 @@ CONFIGURATION:
             print("Supported providers: gemini, claude-code, openai")
             sys.exit(1)
 
-    def publish_issue_to_github(self, output_file: Path, feature_description: str, result: str):
+    def publish_issue_to_github(self, output_file: Path, feature_description: str, 
+                               config: Dict, result: str):
         """Handle GitHub issue creation"""
         print(f"Generated issue file: {output_file}")
         print()
         print("To create GitHub issue manually:")
         
-        repo_path = f"{config_manager.get('github.repo_owner')}/{config_manager.get('github.repo_name')}"
+        repo_path = f"{config['github']['repo_owner']}/{config['github']['repo_name']}"
         manual_command = f'gh issue create --repo "{repo_path}" --body-file "{output_file}"'
         print(f"  {manual_command}")
         print()
         
-        if not config_manager.get('automation.auto_create_issues', False):
+        if not config.get('automation', {}).get('auto_create_issues', False):
             return
             
         print("Auto-creating GitHub issue...")
@@ -218,12 +234,12 @@ CONFIGURATION:
         ]
         
         # Add labels if configured
-        default_labels = config_manager.get('github.default_labels', [])
+        default_labels = config.get('github', {}).get('default_labels', [])
         if default_labels:
             gh_args.extend(['--label', ','.join(default_labels)])
             
         # Add project if configured
-        default_project = config_manager.get('github.default_project')
+        default_project = config.get('github', {}).get('default_project')
         if default_project:
             gh_args.extend(['--project', default_project])
         
@@ -235,7 +251,7 @@ CONFIGURATION:
             print("✓ GitHub issue created successfully!")
             
             # Try to extract and display issue URL from output
-            url_match = re.search(r'https://github\\.com/.*/issues/\\d+', result.stdout)
+            url_match = re.search(r'https://github\.com/.*/issues/\d+', result.stdout)
             if url_match:
                 print(f"Issue URL: {url_match.group()}")
             else:
@@ -260,32 +276,21 @@ CONFIGURATION:
             
         print(f"Generating issue for: {feature_description}")
         
+        config = self.load_config()
+        
         # Load and process template
         with open(self.meta_prompt_file, 'r') as f:
             template = f.read()
             
-        # Get required values from config, exit if missing
-        required_keys = [
-            'project.context', 'project.tech_stack', 'project.architecture',
-            'project.target_users', 'project.constraints'
-        ]
-        config_values = {}
-        for key in required_keys:
-            value = config_manager.get(key)
-            if value is None:
-                print(f"Error: Missing required configuration key: '{key}' in {self.config_file}")
-                sys.exit(1)
-            config_values[key] = value
-
         # Substitute template variables
-        template = template.replace('[PROJECT_CONTEXT_PLACEHOLDER]', config_values['project.context'])
-        template = template.replace('[TECH_STACK_PLACEHOLDER]', config_values['project.tech_stack'])
-        template = template.replace('[ARCHITECTURE_PLACEHOLDER]', config_values['project.architecture'])
-        template = template.replace('[USER_BASE_PLACEHOLDER]', config_values['project.target_users'])
+        template = template.replace('[PROJECT_CONTEXT_PLACEHOLDER]', config['project']['context'])
+        template = template.replace('[TECH_STACK_PLACEHOLDER]', config['project']['tech_stack'])
+        template = template.replace('[ARCHITECTURE_PLACEHOLDER]', config['project']['architecture'])
+        template = template.replace('[USER_BASE_PLACEHOLDER]', config['project']['target_users'])
         
-        constraints = config_values['project.constraints']
-        if template_type and config_manager.get(f'templates.{template_type}'):
-            template_context = config_manager.get(f'templates.{template_type}')
+        constraints = config['project']['constraints']
+        if template_type and template_type in config.get('templates', {}):
+            template_context = config['templates'][template_type]
             constraints = f"{constraints}\n\nTEMPLATE-SPECIFIC CONTEXT: {template_context}"
             
         template = template.replace('[CONSTRAINTS_PLACEHOLDER]', constraints)
@@ -304,27 +309,20 @@ CONFIGURATION:
         # Generate timestamp for filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_feature = re.sub(r'[^\w\-_]', '_', feature_description)
-        safe_feature = safe_feature[:50]
+        safe_feature = safe_feature[:50]  # Limit length
         output_file = self.output_dir / f"{timestamp}_{safe_feature}.md"
         
         # Execute LLM and save output
         print("Processing with LLM...")
-        llm_provider = provider or config_manager.get('llm_settings.default_provider')
-        raw_result = self.invoke_llm(template, llm_provider)
-
-        # Clean the result
-        result = raw_result
-        feature_marker = "# FEATURE:"
-        marker_pos = raw_result.find(feature_marker)
-        if marker_pos > 0:
-            result = raw_result[marker_pos:]
-
+        llm_provider = provider or config['llm_settings']['default_provider']
+        result = self.invoke_llm(template, llm_provider)
+        
         with open(output_file, 'w') as f:
             f.write(result)
         print(f"Issue specification saved to: {output_file}")
         
         # GitHub Integration
-        self.publish_issue_to_github(output_file, feature_description, result)
+        self.publish_issue_to_github(output_file, feature_description, config, result)
         
         # Display summary
         print()
@@ -363,18 +361,9 @@ def main():
     # Override config file if specified
     if args.config:
         generator.config_file = Path(args.config)
-
-    # Load configuration
-    if args.command != 'init':
-        try:
-            config_manager.load_config(str(generator.config_file))
-        except (FileNotFoundError, ValueError) as e:
-            print(f"Error: {e}")
-            print("Run 'python dev-issue.py init' to create a configuration file")
-            sys.exit(1)
-
+    
     if args.help:
-        generator.show_h()
+        generator.show_help()
         return
         
     if args.command == 'init':

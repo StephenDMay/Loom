@@ -1,10 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Dict, Optional
 
 class BaseAgent(ABC):
     """
     Abstract base class for all agents.
     """
+
+    def __init__(self, config: Optional[Dict] = None):
+        """
+        Initializes the agent with an optional configuration dictionary.
+
+        Args:
+            config (Optional[Dict]): Configuration for the agent.
+        """
+        self.config = config or {}
 
     @abstractmethod
     def execute(self, *args, **kwargs) -> Any:
