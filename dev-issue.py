@@ -316,7 +316,7 @@ CONFIGURATION:
         result = raw_result
         feature_marker = "# FEATURE:"
         marker_pos = raw_result.find(feature_marker)
-        if marker_pos > 0:
+        if marker_pos != -1:
             result = raw_result[marker_pos:]
 
         with open(output_file, 'w') as f:
