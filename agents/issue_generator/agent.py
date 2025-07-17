@@ -11,7 +11,17 @@ class IssueGeneratorAgent(BaseAgent):
     def __init__(self, config):
         super().__init__(config)
         self.output_dir = Path(self.config.get("project.root", Path.cwd())) / "generated-issues"
-        self.meta_prompt_file = Path(self.config.get("project.root", Path.cwd())) / "meta-prompt-template.md"
+        self.template_directories = [
+            Path(self.config.get("project.root", Path.cwd())) / d
+            for d in self.config.get('templates.directories', [])
+        ]
+
+    def _find_template_path(self, template_name: str) -> Path | None:
+        for template_dir in self.template_directories:
+            template_path = template_dir / template_name
+            if template_path.exists():
+                return template_path
+        return None
 
     def invoke_llm(self, prompt: str, provider: str) -> str:
         """Execute LLM with the given prompt"""
@@ -42,10 +52,15 @@ class IssueGeneratorAgent(BaseAgent):
             sys.exit(1)
 
     def execute(self, feature_description: str):
-        if not self.meta_prompt_file.exists():
-            return f"Error: Meta-prompt template not found at {self.meta_prompt_file}"
+        meta_prompt_template_path = self._find_template_path("meta-prompt-template.md")
+        if not meta_prompt_template_path:
+            # Fallback to the hardcoded path if not found in configured directories
+            meta_prompt_template_path = Path(self.config.get("project.root", Path.cwd())) / "meta-prompt-template.md"
+            if not meta_prompt_template_path.exists():
+                return f"Error: Meta-prompt template not found in configured directories or at default path: {meta_prompt_template_path}"
+            print(f"Warning: Meta-prompt template not found in configured directories. Using default path: {meta_prompt_template_path}")
 
-        with open(self.meta_prompt_file, 'r') as f:
+        with open(meta_prompt_template_path, 'r') as f:
             template = f.read()
 
         config_values = {}
