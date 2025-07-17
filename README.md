@@ -215,12 +215,12 @@ The beauty of this system is that you can use one installation across multiple p
 # Project A
 cd ~/projects/my-web-app
 python ~/AutoDev/dev-issue.py init  # Creates config for this project
-python ~/AutoDev/dev-issue.py "add user authentication"
+python ~/Loom/dev-issue.py "add user authentication"
 
 # Project B  
 cd ~/projects/my-mobile-app
-python ~/AutoDev/dev-issue.py init  # Creates different config for this project
-python ~/AutoDev/dev-issue.py "implement offline sync"
+python ~/Loom/dev-issue.py init  # Creates different config for this project
+python ~/Loom/dev-issue.py "implement offline sync"
 
 # Each project gets its own config and generated-issues folder
 ```
