@@ -15,7 +15,7 @@ class TestIssueGeneratorAgent(unittest.TestCase):
         self.mock_config_manager.get.side_effect = self._mock_config_get
 
         # Create temporary directories for templates
-        self.test_root_dir = Path("C:/Users/Steve/Projects/AutoDev/temp_test_root")
+        self.test_root_dir = Path("C:/Users/Steve/Projects/Loom/temp_test_root")
         self.test_root_dir.mkdir(parents=True, exist_ok=True)
 
         self.template_dir_1 = self.test_root_dir / "templates_1"

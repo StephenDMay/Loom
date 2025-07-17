@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Loom Configuration Schema",
+  "description": "Schema for dev-automation.config.json",
+  "type": "object",
+  "properties": {
+    "project": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "context": { "type": "string" },
+        "tech_stack": { "type": "string" },
+        "architecture": { "type": "string" },
+        "target_users": { "type": "string" },
+        "constraints": { "type": "string" }
+      },
+      "required": ["name", "context", "tech_stack", "architecture", "target_users", "constraints"],
+      "additionalProperties": false
+    },
+    "github": {
+      "type": "object",
+      "properties": {
+        "repo_owner": { "type": "string" },
+        "repo_name": { "type": "string" },
+        "default_project": { "type": "string" },
+        "default_labels": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["repo_owner", "repo_name", "default_project", "default_labels"],
+      "additionalProperties": false
+    },
+    "llm_settings": {
+      "type": "object",
+      "properties": {
+        "default_provider": {
+          "type": "string",
+          "enum": ["gemini", "openai"]
+        },
+        "output_format": { "type": "string" },
+        "research_depth": { "type": "string" },
+        "temperature": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "required": ["default_provider", "output_format", "research_depth", "temperature"],
+      "additionalProperties": false
+    },
+    "templates": {
+      "type": "object",
+      "properties": {
+        "directories": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["directories"],
+      "additionalProperties": false
+    },
+    "automation": {
+      "type": "object",
+      "properties": {
+        "auto_create_issues": { "type": "boolean" },
+        "auto_assign": { "type": "boolean" }
+      },
+      "required": ["auto_create_issues", "auto_assign"],
+      "additionalProperties": false
+    },
+    "agent_execution_order": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  },
+  "required": ["project", "github", "llm_settings", "templates", "automation", "agent_execution_order"],
+  "additionalProperties": false
+}

@@ -9,7 +9,7 @@ from pathlib import Path
 
 def main():
     """
-    Wrapper script to call dev-issue.py with the 'data' template.
+    Wrapper script to call loom.py with the 'data' template.
     """
     if len(sys.argv) < 2:
         print("Usage: python data.py 'feature description'")
@@ -19,7 +19,7 @@ def main():
     feature_description = ' '.join(sys.argv[1:])
     
     script_dir = Path(__file__).parent.parent
-    dev_issue_script = script_dir / "dev-issue.py"
+    dev_issue_script = script_dir / "loom.py"
 
     command = [
         sys.executable, 
@@ -32,7 +32,7 @@ def main():
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        print(f"Error executing dev-issue.py: {e}", file=sys.stderr)
+        print(f"Error executing loom.py: {e}", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError:
         print(f"Error: Main script not found at {dev_issue_script}", file=sys.stderr)
