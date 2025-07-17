@@ -80,4 +80,15 @@ class ConfigManager:
                 return default
         return value
 
+    def set(self, key: str, value: Any) -> None:
+        """
+        Sets a value in the config.
+        Can handle nested keys using dot notation (e.g., "agent.settings.model").
+        """
+        keys = key.split('.')
+        d = self._config
+        for k in keys[:-1]:
+            d = d.setdefault(k, {})
+        d[keys[-1]] = value
+
 config_manager = ConfigManager()

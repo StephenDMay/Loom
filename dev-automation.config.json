@@ -26,5 +26,8 @@
   "automation": {
     "auto_create_issues": true,
     "auto_assign": true
-  }
+  },
+  "agent_execution_order": [
+    "issue_generator"
+  ]
 }
