@@ -23,6 +23,42 @@ class IssueGeneratorAgent(BaseAgent):
                 return template_path
         return None
 
+    def _extract_structured_output(self, raw_result: str) -> str:
+        """Extract structured output from LLM response, handling various formats"""
+        # First, try to find the exact feature marker
+        feature_marker = "# FEATURE:"
+        marker_pos = raw_result.find(feature_marker)
+        if marker_pos != -1:
+            return raw_result[marker_pos:]
+        
+        # If no exact marker, look for any markdown heading that might be the feature
+        lines = raw_result.split('\n')
+        for i, line in enumerate(lines):
+            # Look for a heading that might be a feature title
+            if line.strip().startswith('# ') and any(keyword in line.lower() for keyword in ['feature', 'spec', 'implementation']):
+                return '\n'.join(lines[i:])
+        
+        # Look for triple backticks indicating structured output
+        if '```' in raw_result:
+            # Find the start of the structured output block
+            start_idx = raw_result.find('```')
+            if start_idx != -1:
+                # Find the content after the opening backticks
+                content_start = raw_result.find('\n', start_idx) + 1
+                end_idx = raw_result.find('```', content_start)
+                if end_idx != -1:
+                    return raw_result[content_start:end_idx].strip()
+        
+        # As a last resort, try to find any section that looks like structured output
+        # Look for lines that start with ## (second-level headings)
+        for i, line in enumerate(lines):
+            if line.strip().startswith('## '):
+                # This might be the start of structured content
+                return '\n'.join(lines[i:])
+        
+        # If all else fails, return the original result with a warning comment
+        return f"# EXTRACTED OUTPUT\n\n{raw_result}"
+
     def invoke_llm(self, prompt: str, provider: str) -> str:
         """Execute LLM with the given prompt"""
         print(f"Executing prompt with provider: {provider}")
@@ -91,11 +127,8 @@ class IssueGeneratorAgent(BaseAgent):
         llm_provider = self.config.get('llm_settings.default_provider', 'gemini')
         raw_result = self.invoke_llm(template, llm_provider)
 
-        result = raw_result
-        feature_marker = "# FEATURE:"
-        marker_pos = raw_result.find(feature_marker)
-        if marker_pos != -1:
-            result = raw_result[marker_pos:]
+        # Extract the structured output from the LLM response
+        result = self._extract_structured_output(raw_result)
 
         with open(output_file, 'w') as f:
             f.write(result)
