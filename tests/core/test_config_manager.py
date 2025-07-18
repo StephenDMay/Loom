@@ -275,6 +275,16 @@ class TestConfigManager(unittest.TestCase):
         expected_config = test_config_manager.get_config()
         self.assertEqual(agent_config, expected_config)
 
+    def test_get_agent_execution_order(self):
+        self.config_manager.load_config(str(self.valid_config_path))
+        execution_order = self.config_manager.get_agent_execution_order()
+        self.assertEqual(execution_order, ["agent1", "agent2"])
+
+    def test_get_agent_execution_order_empty_config(self):
+        # Test with empty config
+        execution_order = self.config_manager.get_agent_execution_order()
+        self.assertEqual(execution_order, [])
+
 
 if __name__ == '__main__':
     unittest.main()

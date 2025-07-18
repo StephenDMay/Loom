@@ -128,6 +128,13 @@ class ConfigManager:
                 return default
         return value
 
+    def get_agent_execution_order(self) -> list[str]:
+        """
+        Retrieves the agent execution order from the configuration.
+        Returns the list of agent names in execution order.
+        """
+        return self.get('agent_execution_order', [])
+
     def set(self, key: str, value: Any) -> None:
         """
         Sets a value in the config.

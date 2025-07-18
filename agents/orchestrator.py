@@ -47,7 +47,7 @@ class AgentOrchestrator:
                 print(f"Error loading agent {agent_name}: {e}")
 
     def prepare_execution_sequence(self):
-        agent_order_names = self.config_manager.get('agent_execution_order')
+        agent_order_names = self.config_manager.get_agent_execution_order()
 
         if not agent_order_names:
             print("Warning: 'agent_execution_order' not found in config. Executing all loaded agents in arbitrary order.")
