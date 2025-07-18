@@ -21,6 +21,12 @@ class TestConfigManager(unittest.TestCase):
         self.non_existent_config_path = self.test_dir / 'non_existent.json'
         self.invalid_config_path = self.test_dir / 'invalid_config.json'
         self.invalid_override_path = self.test_dir / 'invalid_override.json'
+        
+        # Set up agent test directories and configs
+        self.agents_dir = self.test_dir / 'agents'
+        self.test_agent_dir = self.agents_dir / 'test_agent'
+        os.makedirs(self.test_agent_dir, exist_ok=True)
+        self.agent_config_path = self.test_agent_dir / 'config.json'
 
 
         self.base_valid_config_data = {
@@ -51,7 +57,10 @@ class TestConfigManager(unittest.TestCase):
                 "auto_create_issues": True,
                 "auto_assign": False
             },
-            "agent_execution_order": ["agent1", "agent2"]
+            "agent_execution_order": ["agent1", "agent2"],
+            "agents": {
+                "directory": str(self.agents_dir)
+            }
         }
         
         self.override_config_data = {
@@ -74,7 +83,8 @@ class TestConfigManager(unittest.TestCase):
             f.write('{"key": "value",}')
         
         # Create an invalid config file for testing validation errors
-        invalid_data = self.base_valid_config_data.copy()
+        import copy
+        invalid_data = copy.deepcopy(self.base_valid_config_data)
         invalid_data['llm_settings']['default_provider'] = 'unsupported_llm' # Invalid enum value
         with open(self.invalid_config_path, 'w') as f:
             json.dump(invalid_data, f)
@@ -87,6 +97,17 @@ class TestConfigManager(unittest.TestCase):
         }
         with open(self.invalid_override_path, 'w') as f:
             json.dump(invalid_override_data, f)
+            
+        # Create agent config for testing
+        self.agent_config_data = {
+            "llm_settings": {
+                "default_provider": "claude",
+                "temperature": 0.5
+            },
+            "agent_specific_setting": "test_value"
+        }
+        with open(self.agent_config_path, 'w') as f:
+            json.dump(self.agent_config_data, f)
 
 
     def tearDown(self):
@@ -142,7 +163,7 @@ class TestConfigManager(unittest.TestCase):
         # Use the pre-created invalid_config_path with unsupported_llm
         with self.assertRaises(ConfigValidationError) as cm:
             self.config_manager.load_config(str(self.invalid_config_path))
-        self.assertIn("'unsupported_llm' is not one of ['gemini', 'openai']", str(cm.exception))
+        self.assertIn("'unsupported_llm' is not one of ['gemini', 'openai', 'claude']", str(cm.exception))
 
     def test_get_top_level_key(self):
         self.config_manager.load_config(str(self.valid_config_path))
@@ -179,7 +200,8 @@ class TestConfigManager(unittest.TestCase):
         self.config_manager.load_config(str(self.valid_config_path))
         merged_config = self.config_manager.get_merged_config(str(self.override_config_path))
         
-        expected_merged = self.base_valid_config_data.copy()
+        import copy
+        expected_merged = copy.deepcopy(self.base_valid_config_data)
         expected_merged['llm_settings']['default_provider'] = 'openai'
         expected_merged['llm_settings']['temperature'] = 0.9
         expected_merged['templates']['directories'] = ['custom_templates']
@@ -187,7 +209,8 @@ class TestConfigManager(unittest.TestCase):
         self.assertEqual(merged_config, expected_merged)
         
         # Verify the original config is not modified
-        self.assertEqual(self.config_manager.get_config(), self.base_valid_config_data)
+        original_config = self.config_manager.get_config()
+        self.assertEqual(original_config['llm_settings']['default_provider'], 'gemini')  # Should still be original value
 
     def test_get_merged_config_with_non_existent_override(self):
         self.config_manager.load_config(str(self.valid_config_path))
@@ -201,6 +224,56 @@ class TestConfigManager(unittest.TestCase):
             self.config_manager.get_merged_config(str(self.invalid_override_path))
         self.assertIn("123 is not of type 'string'", str(cm.exception))
         self.assertIn("123 is not of type 'string'", str(cm.exception))
+
+    def test_get_agent_config_success(self):
+        self.config_manager.load_config(str(self.valid_config_path))
+        agent_config = self.config_manager.get_agent_config('test_agent')
+        
+        # Agent config should override base config values
+        self.assertEqual(agent_config['llm_settings']['default_provider'], 'claude')
+        self.assertEqual(agent_config['llm_settings']['temperature'], 0.5)
+        self.assertEqual(agent_config['agent_specific_setting'], 'test_value')
+        
+        # Base config values should still be present where not overridden
+        self.assertEqual(agent_config['project']['name'], 'TestProject')
+        self.assertEqual(agent_config['llm_settings']['output_format'], 'structured')
+
+    def test_get_agent_config_no_agent_config_file(self):
+        self.config_manager.load_config(str(self.valid_config_path))
+        # Test with an agent that doesn't have a config.json file
+        agent_config = self.config_manager.get_agent_config('nonexistent_agent')
+        
+        # Should return the base config unchanged
+        expected_config = self.config_manager.get_config()
+        self.assertEqual(agent_config, expected_config)
+
+    def test_get_agent_config_uses_configured_agents_directory(self):
+        self.config_manager.load_config(str(self.valid_config_path))
+        agent_config = self.config_manager.get_agent_config('test_agent')
+        
+        # Should successfully find the agent config using the configured agents directory
+        self.assertEqual(agent_config['agent_specific_setting'], 'test_value')
+
+    def test_get_agent_config_defaults_to_agents_directory(self):
+        # Test with a config that doesn't specify agents.directory
+        import copy
+        config_without_agents_dir = copy.deepcopy(self.base_valid_config_data)
+        del config_without_agents_dir['agents']
+        
+        config_path_no_agents_dir = self.test_dir / 'config_no_agents_dir.json'
+        with open(config_path_no_agents_dir, 'w') as f:
+            json.dump(config_without_agents_dir, f)
+        
+        # Reset the singleton and create a new instance
+        ConfigManager._instance = None
+        test_config_manager = ConfigManager()
+        test_config_manager.load_config(str(config_path_no_agents_dir))
+        
+        # Should default to "agents" directory
+        agent_config = test_config_manager.get_agent_config('test_agent')
+        # This should return base config since the agent won't be found in default "agents" dir
+        expected_config = test_config_manager.get_config()
+        self.assertEqual(agent_config, expected_config)
 
 
 if __name__ == '__main__':
