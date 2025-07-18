@@ -91,6 +91,16 @@ class ConfigManager:
         self._validate_config(merged_config) # Validate the merged config
         return merged_config
 
+    def get_agent_config(self, agent_name: str) -> Dict[str, Any]:
+        """
+        Retrieves the configuration for a specific agent by merging the agent's
+        config.json with the base configuration.
+        Returns the merged configuration dictionary.
+        """
+        agents_directory = self.get("agents.directory", "agents")
+        agent_config_path = Path(agents_directory) / agent_name / "config.json"
+        return self.get_merged_config(str(agent_config_path))
+
     @staticmethod
     def _deep_merge(base: Dict, override: Dict) -> Dict:
         """
@@ -128,5 +138,40 @@ class ConfigManager:
         for k in keys[:-1]:
             d = d.setdefault(k, {})
         d[keys[-1]] = value
+
+class AgentConfigManager:
+    """
+    A wrapper around ConfigManager that provides agent-specific configuration access.
+    """
+    def __init__(self, base_config_manager: ConfigManager, agent_name: str):
+        self._base_config_manager = base_config_manager
+        self._agent_name = agent_name
+        self._agent_config = None
+        
+    def _get_agent_config(self):
+        """Lazy-load the agent-specific configuration."""
+        if self._agent_config is None:
+            self._agent_config = self._base_config_manager.get_agent_config(self._agent_name)
+        return self._agent_config
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """
+        Retrieves a value from the agent-specific merged config.
+        Can handle nested keys using dot notation.
+        """
+        agent_config = self._get_agent_config()
+        return self._base_config_manager._get_from_dict(agent_config, key, default)
+    
+    def get_config(self) -> Dict[str, Any]:
+        """
+        Returns a copy of the agent-specific merged configuration.
+        """
+        return copy.deepcopy(self._get_agent_config())
+    
+    def set(self, key: str, value: Any) -> None:
+        """
+        Delegates to the base config manager for global settings.
+        """
+        return self._base_config_manager.set(key, value)
 
 config_manager = ConfigManager()

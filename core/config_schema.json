@@ -12,7 +12,8 @@
         "tech_stack": { "type": "string" },
         "architecture": { "type": "string" },
         "target_users": { "type": "string" },
-        "constraints": { "type": "string" }
+        "constraints": { "type": "string" },
+        "root": { "type": "string" }
       },
       "required": ["name", "context", "tech_stack", "architecture", "target_users", "constraints"],
       "additionalProperties": false
@@ -36,7 +37,7 @@
       "properties": {
         "default_provider": {
           "type": "string",
-          "enum": ["gemini", "openai"]
+          "enum": ["gemini", "openai", "claude"]
         },
         "output_format": { "type": "string" },
         "research_depth": { "type": "string" },
@@ -68,8 +69,15 @@
     "agent_execution_order": {
       "type": "array",
       "items": { "type": "string" }
+    },
+    "agents": {
+      "type": "object",
+      "properties": {
+        "directory": { "type": "string" }
+      },
+      "additionalProperties": false
     }
   },
   "required": ["project", "github", "llm_settings", "templates", "automation", "agent_execution_order"],
-  "additionalProperties": false
+  "additionalProperties": true
 }
