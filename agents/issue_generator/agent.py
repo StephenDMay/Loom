@@ -1,7 +1,5 @@
 import os
 import re
-import subprocess
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -21,6 +19,7 @@ class IssueGeneratorAgent(BaseAgent):
         ]
 
     def _find_template_path(self, template_name: str) -> Path | None:
+        """Find template in configured directories."""
         for template_dir in self.template_directories:
             template_path = template_dir / template_name
             if template_path.exists():
@@ -63,40 +62,9 @@ class IssueGeneratorAgent(BaseAgent):
         # If all else fails, return the original result with a warning comment
         return f"# EXTRACTED OUTPUT\n\n{raw_result}"
 
-    def invoke_llm(self, prompt: str, agent_name: str = None) -> str:
-        """Execute LLM with the given prompt using LLMManager"""
-        if self.llm_manager:
-            return self.llm_manager.execute(prompt, agent_name=agent_name)
-        else:
-            # Fallback to subprocess approach if no LLMManager available
-            provider = self.config.get('llm_settings.default_provider', 'gemini')
-            print(f"Executing prompt with provider: {provider}")
-            
-            import platform
-            if platform.system() == "Windows" and provider in ["gemini"]:
-                provider_cmd = f"{provider}.cmd"
-            else:
-                provider_cmd = provider
-            
-            try:
-                result = subprocess.run(
-                    [provider_cmd],
-                    input=prompt,
-                    text=True,
-                    capture_output=True,
-                    check=True
-                )
-                return result.stdout
-                
-            except subprocess.CalledProcessError as e:
-                print(f"LLM provider execution failed with exit code {e.returncode}")
-                print(f"Error details: {e.stderr}")
-                sys.exit(1)
-            except FileNotFoundError:
-                print(f"LLM provider '{provider}' not found. Make sure it's installed and in your PATH.")
-                sys.exit(1)
-
     def execute(self, feature_description: str):
+        """Execute the issue generation agent."""
+        # Find template
         meta_prompt_template_path = self._find_template_path("meta-prompt-template.md")
         if not meta_prompt_template_path:
             # Fallback to the hardcoded path if not found in configured directories
@@ -105,9 +73,11 @@ class IssueGeneratorAgent(BaseAgent):
                 return f"Error: Meta-prompt template not found in configured directories or at default path: {meta_prompt_template_path}"
             print(f"Warning: Meta-prompt template not found in configured directories. Using default path: {meta_prompt_template_path}")
 
+        # Load and populate template
         with open(meta_prompt_template_path, 'r') as f:
             template = f.read()
 
+        # Validate required config keys
         config_values = {}
         required_keys = [
             'project.context', 'project.tech_stack', 'project.architecture',
@@ -119,6 +89,7 @@ class IssueGeneratorAgent(BaseAgent):
                 return f"Error: Missing required configuration key: '{key}'"
             config_values[key] = value
 
+        # Replace template placeholders
         template = template.replace('[PROJECT_CONTEXT_PLACEHOLDER]', config_values['project.context'])
         template = template.replace('[TECH_STACK_PLACEHOLDER]', config_values['project.tech_stack'])
         template = template.replace('[ARCHITECTURE_PLACEHOLDER]', config_values['project.architecture'])
@@ -126,18 +97,28 @@ class IssueGeneratorAgent(BaseAgent):
         template = template.replace('[CONSTRAINTS_PLACEHOLDER]', config_values['project.constraints'])
         template = template.replace('[USER_INPUT_PLACEHOLDER]', feature_description)
         
+        # Create output directory
         self.output_dir.mkdir(exist_ok=True)
         
+        # Generate timestamp and safe filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         safe_feature = re.sub(r'[^\w\-_]', '_', feature_description)
         safe_feature = safe_feature[:50]
         output_file = self.output_dir / f"{timestamp}_{safe_feature}.md"
         
-        raw_result = self.invoke_llm(template, agent_name="issue_generator")
+        # Execute LLM call using LLMManager
+        if not self.llm_manager:
+            return "Error: LLMManager not available"
+        
+        try:
+            raw_result = self.llm_manager.execute(template, agent_name="issue_generator")
+        except Exception as e:
+            return f"Error executing LLM call: {str(e)}"
 
-        # Extract the structured output from the LLM response
+        # Extract structured output
         result = self._extract_structured_output(raw_result)
 
+        # Write to file
         with open(output_file, 'w') as f:
             f.write(result)
         

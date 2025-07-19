@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Loom Configuration Schema",
+  "title": "AutoDev Configuration Schema",
   "description": "Schema for dev-automation.config.json",
   "type": "object",
   "properties": {
@@ -37,11 +37,20 @@
       "properties": {
         "default_provider": {
           "type": "string",
-          "enum": ["gemini", "openai", "claude"]
+          "enum": ["gemini", "claude"]
         },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["cli", "api"],
+          "default": "cli"
+        },
+        "model": { "type": "string" },
         "output_format": { "type": "string" },
         "research_depth": { "type": "string" },
-        "temperature": { "type": "number", "minimum": 0, "maximum": 1 }
+        "temperature": { "type": "number", "minimum": 0, "maximum": 2 },
+        "max_tokens": { "type": "integer", "minimum": 1 },
+        "top_p": { "type": "number", "minimum": 0, "maximum": 1 },
+        "top_k": { "type": "integer", "minimum": 1 }
       },
       "required": ["default_provider", "output_format", "research_depth", "temperature"],
       "additionalProperties": false
