@@ -142,8 +142,7 @@ class TestLLMManager(unittest.TestCase):
                 LLMManager(self.mock_config_manager)
             self.assertIn("Failed to initialize LLM client", str(context.exception))
 
-    @patch('core.llm_manager.LLMManager._initialize_client')
-    def test_resolve_configuration_global_defaults(self, mock_init):
+    def test_resolve_configuration_global_defaults(self):
         """Test configuration resolution with only global defaults."""
         llm_manager = LLMManager(self.mock_config_manager)
         
@@ -161,14 +160,13 @@ class TestLLMManager(unittest.TestCase):
         for key, expected_value in expected_config.items():
             self.assertEqual(config[key], expected_value)
 
-    @patch('core.llm_manager.LLMManager._initialize_client')
-    def test_resolve_configuration_agent_specific(self, mock_init):
+    def test_resolve_configuration_agent_specific(self):
         """Test configuration resolution with agent-specific configuration."""
         # Mock agent config
         agent_config = {
             'llm': {
-                'provider': 'openai',
-                'model': 'gpt-4',
+                'provider': 'claude',
+                'model': 'claude-3-5-sonnet-20241022',
                 'temperature': 0.3,
                 'max_tokens': 2048
             }
@@ -179,22 +177,21 @@ class TestLLMManager(unittest.TestCase):
         config = llm_manager._resolve_configuration(agent_name="test_agent")
         
         # Agent-specific values should override defaults
-        self.assertEqual(config['provider'], 'openai')
-        self.assertEqual(config['model'], 'gpt-4')
+        self.assertEqual(config['provider'], 'claude')
+        self.assertEqual(config['model'], 'claude-3-5-sonnet-20241022')
         self.assertEqual(config['temperature'], 0.3)
         self.assertEqual(config['max_tokens'], 2048)
         
         # Verify get_agent_config was called
         self.mock_config_manager.get_agent_config.assert_called_once_with("test_agent")
 
-    @patch('core.llm_manager.LLMManager._initialize_client')
-    def test_resolve_configuration_explicit_parameters(self, mock_init):
+    def test_resolve_configuration_explicit_parameters(self):
         """Test configuration resolution with explicit parameters (highest priority)."""
         # Mock agent config
         agent_config = {
             'llm': {
-                'provider': 'openai',
-                'model': 'gpt-4',
+                'provider': 'claude',
+                'model': 'claude-3-5-sonnet-20241022',
                 'temperature': 0.3
             }
         }
@@ -205,19 +202,17 @@ class TestLLMManager(unittest.TestCase):
         # Explicit parameters should override everything
         config = llm_manager._resolve_configuration(
             agent_name="test_agent",
-            provider="claude",
-            model="claude-3",
+            provider="gemini",
             temperature=0.1,
             max_tokens=1024
         )
         
-        self.assertEqual(config['provider'], 'claude')
-        self.assertEqual(config['model'], 'claude-3')
+        self.assertEqual(config['provider'], 'gemini')
+        self.assertEqual(config['model'], 'claude-3-5-sonnet-20241022')  # From agent config
         self.assertEqual(config['temperature'], 0.1)
         self.assertEqual(config['max_tokens'], 1024)
 
-    @patch('core.llm_manager.LLMManager._initialize_client')
-    def test_resolve_configuration_agent_config_error(self, mock_init):
+    def test_resolve_configuration_agent_config_error(self):
         """Test configuration resolution when agent config loading fails."""
         # Mock agent config to raise exception
         self.mock_config_manager.get_agent_config.side_effect = Exception("Config not found")

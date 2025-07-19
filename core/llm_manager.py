@@ -183,31 +183,52 @@ class LLMManager:
 
     def _resolve_configuration(self, agent_name: str = None, provider: str = None, 
                               temperature: float = None, **kwargs) -> Dict[str, Any]:
-        """Resolve LLM configuration with proper precedence."""
-        # Start with global defaults
+        """
+        Resolve LLM configuration with proper precedence:
+        1. Hardcoded defaults (lowest priority)
+        2. Global LLM settings from dev-automation.config.json
+        3. Agent-specific configuration from agent's config.json
+        4. Explicit parameters passed to execute method (highest priority)
+        """
+        # 1. Start with hardcoded defaults
         config = {
-            'provider': self.config_manager.get("llm_settings.default_provider", "gemini"),
-            'model': self.config_manager.get("llm_settings.model", "gemini-2.0-flash-exp"),
-            'temperature': self.config_manager.get("llm_settings.temperature", 0.7),
-            'max_tokens': self.config_manager.get("llm_settings.max_tokens", 8192),
+            'provider': "gemini",
+            'model': "gemini-2.0-flash-exp", 
+            'temperature': 0.7,
+            'max_tokens': 8192,
         }
         
-        # Override with agent-specific configuration
+        # 2. Apply global LLM settings from dev-automation.config.json
+        global_llm_config = {
+            'provider': self.config_manager.get("llm_settings.default_provider"),
+            'model': self.config_manager.get("llm_settings.model"),
+            'temperature': self.config_manager.get("llm_settings.temperature"),
+            'max_tokens': self.config_manager.get("llm_settings.max_tokens"),
+            'top_p': self.config_manager.get("llm_settings.top_p"),
+            'top_k': self.config_manager.get("llm_settings.top_k"),
+        }
+        # Only update with non-None values from global config
+        for key, value in global_llm_config.items():
+            if value is not None:
+                config[key] = value
+        
+        # 3. Apply agent-specific configuration
         if agent_name:
             try:
                 agent_config = self.config_manager.get_agent_config(agent_name)
-                llm_config = agent_config.get('llm', {})
-                config.update(llm_config)
+                agent_llm_config = agent_config.get('llm', {})
+                config.update(agent_llm_config)
             except Exception:
-                # If agent config can't be loaded, fall back to global defaults
+                # If agent config can't be loaded, fall back to current config
                 pass
         
-        # Override with explicit parameters (highest priority)
+        # 4. Apply explicit parameters (highest priority)
         if provider is not None:
             config['provider'] = provider
         if temperature is not None:
             config['temperature'] = temperature
         
+        # Apply any additional keyword arguments
         config.update(kwargs)
         return config
 
