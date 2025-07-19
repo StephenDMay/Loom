@@ -4,12 +4,16 @@ import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from agents.base_agent import BaseAgent
 
+if TYPE_CHECKING:
+    from core.llm_manager import LLMManager
+
 class IssueGeneratorAgent(BaseAgent):
-    def __init__(self, config):
-        super().__init__(config)
+    def __init__(self, config, llm_manager: 'LLMManager' = None):
+        super().__init__(config, llm_manager)
         self.output_dir = Path(self.config.get("project.root", Path.cwd())) / "generated-issues"
         self.template_directories = [
             Path(self.config.get("project.root", Path.cwd())) / d
