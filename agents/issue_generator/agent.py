@@ -63,33 +63,38 @@ class IssueGeneratorAgent(BaseAgent):
         # If all else fails, return the original result with a warning comment
         return f"# EXTRACTED OUTPUT\n\n{raw_result}"
 
-    def invoke_llm(self, prompt: str, provider: str) -> str:
-        """Execute LLM with the given prompt"""
-        print(f"Executing prompt with provider: {provider}")
-        
-        import platform
-        if platform.system() == "Windows" and provider in ["gemini"]:
-            provider_cmd = f"{provider}.cmd"
+    def invoke_llm(self, prompt: str, agent_name: str = None) -> str:
+        """Execute LLM with the given prompt using LLMManager"""
+        if self.llm_manager:
+            return self.llm_manager.execute(prompt, agent_name=agent_name)
         else:
-            provider_cmd = provider
-        
-        try:
-            result = subprocess.run(
-                [provider_cmd],
-                input=prompt,
-                text=True,
-                capture_output=True,
-                check=True
-            )
-            return result.stdout
+            # Fallback to subprocess approach if no LLMManager available
+            provider = self.config.get('llm_settings.default_provider', 'gemini')
+            print(f"Executing prompt with provider: {provider}")
             
-        except subprocess.CalledProcessError as e:
-            print(f"LLM provider execution failed with exit code {e.returncode}")
-            print(f"Error details: {e.stderr}")
-            sys.exit(1)
-        except FileNotFoundError:
-            print(f"LLM provider '{provider}' not found. Make sure it's installed and in your PATH.")
-            sys.exit(1)
+            import platform
+            if platform.system() == "Windows" and provider in ["gemini"]:
+                provider_cmd = f"{provider}.cmd"
+            else:
+                provider_cmd = provider
+            
+            try:
+                result = subprocess.run(
+                    [provider_cmd],
+                    input=prompt,
+                    text=True,
+                    capture_output=True,
+                    check=True
+                )
+                return result.stdout
+                
+            except subprocess.CalledProcessError as e:
+                print(f"LLM provider execution failed with exit code {e.returncode}")
+                print(f"Error details: {e.stderr}")
+                sys.exit(1)
+            except FileNotFoundError:
+                print(f"LLM provider '{provider}' not found. Make sure it's installed and in your PATH.")
+                sys.exit(1)
 
     def execute(self, feature_description: str):
         meta_prompt_template_path = self._find_template_path("meta-prompt-template.md")
@@ -128,8 +133,7 @@ class IssueGeneratorAgent(BaseAgent):
         safe_feature = safe_feature[:50]
         output_file = self.output_dir / f"{timestamp}_{safe_feature}.md"
         
-        llm_provider = self.config.get('llm_settings.default_provider', 'gemini')
-        raw_result = self.invoke_llm(template, llm_provider)
+        raw_result = self.invoke_llm(template, agent_name="issue_generator")
 
         # Extract the structured output from the LLM response
         result = self._extract_structured_output(raw_result)

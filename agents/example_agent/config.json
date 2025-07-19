@@ -2,6 +2,13 @@
   "llm_settings": {
     "temperature": 0.5
   },
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-pro", 
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "top_p": 0.9
+  },
   "example_agent": {
     "description": "This is an example agent with a custom configuration.",
     "custom_setting": "example_agent_specific_value"

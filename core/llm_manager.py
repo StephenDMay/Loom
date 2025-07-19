@@ -56,9 +56,49 @@ class LLMManager:
             except (ImportError, ValueError) as e:
                 raise RuntimeError(f"Failed to initialize LLM client: {str(e)}")
 
+    def execute(self, prompt: str, agent_name: str = None, provider: str = None, 
+                model: str = None, temperature: float = None, max_tokens: int = None, **kwargs) -> str:
+        """
+        Execute an LLM call with the given prompt and optional agent-specific configuration.
+        
+        Args:
+            prompt: The input prompt for the LLM
+            agent_name: Optional agent name to load agent-specific LLM configuration
+            provider: Optional provider override
+            model: Optional model override
+            temperature: Optional temperature override
+            max_tokens: Optional max tokens override
+            **kwargs: Additional parameters for the LLM call
+            
+        Returns:
+            The LLM's response as a string
+        """
+        if not prompt:
+            raise ValueError("Prompt cannot be empty")
+        
+        # Resolve configuration in order of precedence:
+        # 1. Explicit parameters (highest priority)
+        # 2. Agent-specific configuration
+        # 3. Global default configuration (lowest priority)
+        resolved_config = self._resolve_configuration(agent_name, provider, model, temperature, max_tokens, **kwargs)
+        
+        # Set provider for this call
+        call_provider = resolved_config.get('provider', self.provider)
+        
+        # Ensure client is initialized before making calls
+        self._ensure_client_initialized()
+        
+        try:
+            if call_provider == "gemini":
+                return self._execute_gemini_call(prompt, resolved_config)
+            else:
+                raise ValueError(f"Unsupported provider: {call_provider}")
+        except Exception as e:
+            raise RuntimeError(f"LLM call failed: {str(e)}")
+
     def execute_llm_call(self, prompt: str, temperature: Optional[float] = None) -> str:
         """
-        Execute an LLM call with the given prompt.
+        Legacy method for backward compatibility.
         
         Args:
             prompt: The input prompt for the LLM
@@ -67,31 +107,62 @@ class LLMManager:
         Returns:
             The LLM's response as a string
         """
-        if not prompt:
-            raise ValueError("Prompt cannot be empty")
-        
-        # Ensure client is initialized before making calls
-        self._ensure_client_initialized()
-        
-        # Use provided temperature or fall back to config default
-        if temperature is None:
-            temperature = self.config_manager.get("llm_settings.temperature", 0.7)
-        
-        try:
-            if self.provider == "gemini":
-                return self._execute_gemini_call(prompt, temperature)
-            else:
-                raise ValueError(f"Unsupported provider: {self.provider}")
-        except Exception as e:
-            raise RuntimeError(f"LLM call failed: {str(e)}")
+        return self.execute(prompt, temperature=temperature)
     
-    def _execute_gemini_call(self, prompt: str, temperature: float) -> str:
-        """Execute a call to Gemini."""
+    def _resolve_configuration(self, agent_name: str = None, provider: str = None, 
+                              model: str = None, temperature: float = None, 
+                              max_tokens: int = None, **kwargs) -> Dict[str, Any]:
+        """
+        Resolve LLM configuration in order of precedence:
+        1. Explicit parameters (highest priority)
+        2. Agent-specific configuration
+        3. Global default configuration (lowest priority)
+        """
+        # Start with global defaults
+        config = {
+            'provider': self.config_manager.get("llm_settings.default_provider", "gemini"),
+            'model': self.config_manager.get("llm_settings.model", "gemini-pro"),
+            'temperature': self.config_manager.get("llm_settings.temperature", 0.7),
+            'max_tokens': self.config_manager.get("llm_settings.max_tokens", 8192),
+            'top_p': self.config_manager.get("llm_settings.top_p", 0.8),
+            'top_k': self.config_manager.get("llm_settings.top_k", 40),
+        }
+        
+        # Override with agent-specific configuration if agent_name is provided
+        if agent_name:
+            try:
+                agent_config = self.config_manager.get_agent_config(agent_name)
+                if 'llm' in agent_config:
+                    llm_config = agent_config['llm']
+                    for key in ['provider', 'model', 'temperature', 'max_tokens', 'top_p', 'top_k']:
+                        if key in llm_config:
+                            config[key] = llm_config[key]
+            except Exception:
+                # If agent config can't be loaded, fall back to global defaults
+                pass
+        
+        # Override with explicit parameters (highest priority)
+        if provider is not None:
+            config['provider'] = provider
+        if model is not None:
+            config['model'] = model
+        if temperature is not None:
+            config['temperature'] = temperature
+        if max_tokens is not None:
+            config['max_tokens'] = max_tokens
+        
+        # Add any additional kwargs
+        config.update(kwargs)
+        
+        return config
+
+    def _execute_gemini_call(self, prompt: str, config: Dict[str, Any]) -> str:
+        """Execute a call to Gemini with the resolved configuration."""
         generation_config = {
-            'temperature': temperature,
-            'top_p': 0.8,
-            'top_k': 40,
-            'max_output_tokens': 8192,
+            'temperature': config.get('temperature', 0.7),
+            'top_p': config.get('top_p', 0.8),
+            'top_k': config.get('top_k', 40),
+            'max_output_tokens': config.get('max_tokens', 8192),
         }
         
         response = self.client.generate_content(
