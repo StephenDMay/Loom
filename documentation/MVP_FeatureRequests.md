@@ -15,13 +15,13 @@
 
 ### Core Infrastructure (Essential)
 
-**FEATURE-001: Add get_agent_config method to ConfigManager** ⭐ HIGH PRIORITY -- DONE
+**FEATURE-001: Add get_agent_config method to ConfigManager** ⭐ HIGH PRIORITY -- ***DONE***
 - Implement `get_agent_config(agent_name)` method in existing ConfigManager
 - Return agent-specific config merged with defaults
 - Handle missing agent sections gracefully (return defaults)
 - **Scope**: Single method addition, 30-50 lines of code
 
-**FEATURE-002: Add agent execution ordering to ConfigManager** ⭐ HIGH PRIORITY  
+**FEATURE-002: Add agent execution ordering to ConfigManager** ⭐ HIGH PRIORITY  -- **DONE**
 - Implement `get_agent_execution_order()` method
 - Read order from config `agent_execution_order` array
 - Fallback to existing discovery order if not configured
