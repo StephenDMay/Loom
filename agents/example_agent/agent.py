@@ -19,6 +19,15 @@ class ExampleAgent(BaseAgent):
             task_description: A string describing the task to be performed.
 
         Returns:
-            A string confirming the task was received.
+            A string confirming the task was received or LLM response if available.
         """
-        return f"ExampleAgent received: {task_description}"
+        if self.llm_manager:
+            # Use LLM to process the task if available
+            prompt = f"Process this task: {task_description}"
+            try:
+                response = self.llm_manager.execute(prompt, agent_name="example_agent")
+                return f"ExampleAgent processed via LLM: {response}"
+            except Exception as e:
+                return f"ExampleAgent LLM failed ({e}), fallback: {task_description}"
+        else:
+            return f"ExampleAgent received: {task_description}"
