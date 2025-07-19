@@ -1,7 +1,7 @@
 {
   "llm_settings": {
-    "default_provider": "gemini",
-    "temperature": 0.8
+    "default_provider": "claude",
+    "temperature": 0.2
   },
   "issue_generator": {
     "output_format": "enhanced",

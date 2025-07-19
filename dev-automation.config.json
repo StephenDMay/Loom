@@ -1,6 +1,6 @@
 {
   "project": {
-    "name": "AutoDev",
+    "name": "Loom",
     "context": "A flexible system that automates the software development lifecycle - from initial research discussions through to deployed code - where developers can use ANY AI model or tool at ANY stage of the process.",
     "tech_stack": "Python, markdown",
     "architecture": "Open orchestration",
@@ -9,8 +9,8 @@
   },
   "github": {
     "repo_owner": "StephenDMay",
-    "repo_name": "AutoDev",
-    "default_project": "AutoDev-Board",
+    "repo_name": "Loom",
+    "default_project": "Loom-Board",
     "default_labels": [
       "auto-generated",
       "needs-review"
@@ -20,7 +20,7 @@
     "default_provider": "gemini",
     "output_format": "structured",
     "research_depth": "standard",
-    "temperature": 0.7
+    "temperature": 0.6
   },
   "templates": {
     "directories": []

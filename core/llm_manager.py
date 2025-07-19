@@ -1,163 +1,143 @@
 import os
+import platform
+import subprocess
 from typing import Optional, Dict, Any
 from core.config_manager import ConfigManager
 
 class LLMManager:
     """
-    Centralized manager for all Large Language Model interactions.
-    Provides a unified interface for different LLM providers.
+    Centralized manager for Large Language Model interactions using CLI-first approach.
     """
     
     def __init__(self, config_manager: ConfigManager):
-        """
-        Initialize the LLMManager with configuration.
-        
-        Args:
-            config_manager: ConfigManager instance for accessing LLM settings
-        """
         self.config_manager = config_manager
-        self.provider = self._get_default_provider()
-        self.client = None
-        self._client_initialized = False
+        self.execution_mode = config_manager.get("llm_settings.execution_mode", "cli")
+        
+        # Provider CLI mapping
+        self.provider_commands = {
+            "gemini": "gemini",
+            "claude": "claude"
+        }
     
-    def _get_default_provider(self) -> str:
-        """Get the default LLM provider from configuration."""
-        return self.config_manager.get("llm_settings.default_provider", "gemini")
-    
-    def _initialize_client(self):
-        """Initialize the appropriate LLM client based on the provider."""
-        if self.provider == "gemini":
-            return self._initialize_gemini_client()
-        else:
-            raise ValueError(f"Unsupported LLM provider: {self.provider}")
-    
-    def _initialize_gemini_client(self):
-        """Initialize Gemini client."""
-        try:
-            import google.generativeai as genai
-            
-            # Get API key from environment variable
-            api_key = os.getenv("GEMINI_API_KEY")
-            if not api_key:
-                raise ValueError("GEMINI_API_KEY environment variable not set")
-            
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel('gemini-pro')
-            return model
-        except ImportError:
-            raise ImportError("google-generativeai package not installed. Install with: pip install google-generativeai")
-    
-    def _ensure_client_initialized(self):
-        """Lazy initialization of the LLM client."""
-        if not self._client_initialized:
-            try:
-                self.client = self._initialize_client()
-                self._client_initialized = True
-            except (ImportError, ValueError) as e:
-                raise RuntimeError(f"Failed to initialize LLM client: {str(e)}")
-
     def execute(self, prompt: str, agent_name: str = None, provider: str = None, 
-                model: str = None, temperature: float = None, max_tokens: int = None, **kwargs) -> str:
+                temperature: float = None, **kwargs) -> str:
         """
         Execute an LLM call with the given prompt and optional agent-specific configuration.
-        
-        Args:
-            prompt: The input prompt for the LLM
-            agent_name: Optional agent name to load agent-specific LLM configuration
-            provider: Optional provider override
-            model: Optional model override
-            temperature: Optional temperature override
-            max_tokens: Optional max tokens override
-            **kwargs: Additional parameters for the LLM call
-            
-        Returns:
-            The LLM's response as a string
         """
         if not prompt:
             raise ValueError("Prompt cannot be empty")
         
-        # Resolve configuration in order of precedence:
-        # 1. Explicit parameters (highest priority)
-        # 2. Agent-specific configuration
-        # 3. Global default configuration (lowest priority)
-        resolved_config = self._resolve_configuration(agent_name, provider, model, temperature, max_tokens, **kwargs)
+        resolved_config = self._resolve_configuration(agent_name, provider, temperature, **kwargs)
         
-        # Set provider for this call
-        call_provider = resolved_config.get('provider', self.provider)
+        if self.execution_mode == "api":
+            return self._execute_api_call(prompt, resolved_config)
+        else:
+            return self._execute_cli_call(prompt, resolved_config)
+
+    def _execute_cli_call(self, prompt: str, config: Dict[str, Any]) -> str:
+        """Execute LLM call using CLI tools."""
+        provider = config['provider']
         
-        # Ensure client is initialized before making calls
-        self._ensure_client_initialized()
+        if provider not in self.provider_commands:
+            available = ", ".join(self.provider_commands.keys())
+            raise ValueError(f"Unsupported provider '{provider}'. Available: {available}")
+        
+        # Claude doesn't support simple stdin/stdout like Gemini, so use API mode
+        if provider == "claude":
+            print("Note: Claude CLI doesn't support simple prompt mode, using API...")
+            return self._execute_api_call(prompt, config)
+        
+        cmd = self.provider_commands[provider]
+        
+        # Handle Windows .cmd extension for npm-installed tools
+        if platform.system() == "Windows" and provider == "gemini":
+            cmd += ".cmd"
         
         try:
-            if call_provider == "gemini":
-                return self._execute_gemini_call(prompt, resolved_config)
-            else:
-                raise ValueError(f"Unsupported provider: {call_provider}")
-        except Exception as e:
-            raise RuntimeError(f"LLM call failed: {str(e)}")
-
-    def execute_llm_call(self, prompt: str, temperature: Optional[float] = None) -> str:
-        """
-        Legacy method for backward compatibility.
-        
-        Args:
-            prompt: The input prompt for the LLM
-            temperature: Optional temperature override for this call
+            # Check if provider is available
+            if not self._validate_provider_availability(provider):
+                self._prompt_user_for_missing_provider(provider)
+                raise RuntimeError(f"Provider '{provider}' is not available")
             
-        Returns:
-            The LLM's response as a string
-        """
-        return self.execute(prompt, temperature=temperature)
-    
-    def _resolve_configuration(self, agent_name: str = None, provider: str = None, 
-                              model: str = None, temperature: float = None, 
-                              max_tokens: int = None, **kwargs) -> Dict[str, Any]:
-        """
-        Resolve LLM configuration in order of precedence:
-        1. Explicit parameters (highest priority)
-        2. Agent-specific configuration
-        3. Global default configuration (lowest priority)
-        """
-        # Start with global defaults
-        config = {
-            'provider': self.config_manager.get("llm_settings.default_provider", "gemini"),
-            'model': self.config_manager.get("llm_settings.model", "gemini-pro"),
-            'temperature': self.config_manager.get("llm_settings.temperature", 0.7),
-            'max_tokens': self.config_manager.get("llm_settings.max_tokens", 8192),
-            'top_p': self.config_manager.get("llm_settings.top_p", 0.8),
-            'top_k': self.config_manager.get("llm_settings.top_k", 40),
-        }
-        
-        # Override with agent-specific configuration if agent_name is provided
-        if agent_name:
-            try:
-                agent_config = self.config_manager.get_agent_config(agent_name)
-                if 'llm' in agent_config:
-                    llm_config = agent_config['llm']
-                    for key in ['provider', 'model', 'temperature', 'max_tokens', 'top_p', 'top_k']:
-                        if key in llm_config:
-                            config[key] = llm_config[key]
-            except Exception:
-                # If agent config can't be loaded, fall back to global defaults
-                pass
-        
-        # Override with explicit parameters (highest priority)
-        if provider is not None:
-            config['provider'] = provider
-        if model is not None:
-            config['model'] = model
-        if temperature is not None:
-            config['temperature'] = temperature
-        if max_tokens is not None:
-            config['max_tokens'] = max_tokens
-        
-        # Add any additional kwargs
-        config.update(kwargs)
-        
-        return config
+            print(f"Executing LLM call with provider: {provider}")
+            
+            result = subprocess.run(
+                [cmd],
+                input=prompt,
+                text=True,
+                capture_output=True,
+                check=True,
+                timeout=300  # 5 minute timeout
+            )
+            
+            return result.stdout.strip()
+            
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(f"LLM call timed out after 5 minutes")
+        except subprocess.CalledProcessError as e:
+            error_msg = f"LLM provider '{provider}' failed with exit code {e.returncode}"
+            if e.stderr:
+                error_msg += f"\nError details: {e.stderr}"
+            raise RuntimeError(error_msg)
+        except FileNotFoundError:
+            self._prompt_user_for_missing_provider(provider)
+            raise RuntimeError(f"LLM provider '{provider}' not found in PATH")
 
-    def _execute_gemini_call(self, prompt: str, config: Dict[str, Any]) -> str:
-        """Execute a call to Gemini with the resolved configuration."""
+    def _execute_api_call(self, prompt: str, config: Dict[str, Any]) -> str:
+        """Execute LLM call using API (future implementation)."""
+        provider = config['provider']
+        
+        if provider == "gemini":
+            return self._execute_gemini_api(prompt, config)
+        elif provider == "claude":
+            return self._execute_claude_api(prompt, config)
+        else:
+            raise NotImplementedError(f"API mode not yet implemented for provider: {provider}")
+
+    def _execute_claude_api(self, prompt: str, config: Dict[str, Any]) -> str:
+        """Execute Claude API call."""
+        try:
+            import anthropic
+        except ImportError:
+            raise ImportError("anthropic package not installed. Install with: pip install anthropic")
+
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
+        
+        client = anthropic.Anthropic(api_key=api_key)
+        
+        model_name = config.get('model', 'claude-3-5-sonnet-20241022')
+        temperature = config.get('temperature', 0.7)
+        max_tokens = config.get('max_tokens', 8192)
+        
+        # Claude temperature is 0-1, so clamp if necessary
+        temperature = min(max(temperature, 0.0), 1.0)
+        
+        response = client.messages.create(
+            model=model_name,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        return response.content[0].text
+
+    def _execute_gemini_api(self, prompt: str, config: Dict[str, Any]) -> str:
+        """Execute Gemini API call (existing implementation)."""
+        try:
+            import google.generativeai as genai
+        except ImportError:
+            raise ImportError("google-generativeai package not installed. Install with: pip install google-generativeai")
+
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY environment variable not set")
+        
+        genai.configure(api_key=api_key)
+        
         generation_config = {
             'temperature': config.get('temperature', 0.7),
             'top_p': config.get('top_p', 0.8),
@@ -165,22 +145,87 @@ class LLMManager:
             'max_output_tokens': config.get('max_tokens', 8192),
         }
         
-        response = self.client.generate_content(
-            prompt,
-            generation_config=generation_config
-        )
+        model_name = config.get('model', 'gemini-2.0-flash-exp')
+        model = genai.GenerativeModel(model_name)
         
+        response = model.generate_content(prompt, generation_config=generation_config)
         return response.text
-    
-    def get_provider(self) -> str:
-        """Get the current LLM provider."""
-        return self.provider
-    
-    def get_config(self) -> Dict[str, Any]:
-        """Get current LLM configuration."""
+
+    def _validate_provider_availability(self, provider: str) -> bool:
+        """Check if provider CLI tool is available."""
+        cmd = self.provider_commands.get(provider)
+        if not cmd:
+            return False
+        
+        if platform.system() == "Windows" and provider == "gemini":
+            cmd += ".cmd"
+        
+        try:
+            # Try a simple command to check availability
+            subprocess.run([cmd, "--help"], capture_output=True, check=True, timeout=10)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            return False
+
+    def _prompt_user_for_missing_provider(self, provider: str):
+        """Provide helpful error message for missing provider."""
+        install_instructions = {
+            "gemini": "Install with: npm install -g @google-ai/generativelanguage-cli",
+            "claude": "Install with: npm install -g @anthropic-ai/claude-code"
+        }
+        
+        instruction = install_instructions.get(provider, f"Install {provider} CLI tool")
+        
+        print(f"\n❌ Error: {provider} CLI tool not found")
+        print(f"📦 {instruction}")
+        print(f"🔧 Make sure the tool is installed and available in your PATH")
+        print(f"💡 You can also switch providers in your dev-automation.config.json")
+
+    def _resolve_configuration(self, agent_name: str = None, provider: str = None, 
+                              temperature: float = None, **kwargs) -> Dict[str, Any]:
+        """Resolve LLM configuration with proper precedence."""
+        # Start with global defaults
+        config = {
+            'provider': self.config_manager.get("llm_settings.default_provider", "gemini"),
+            'model': self.config_manager.get("llm_settings.model", "gemini-2.0-flash-exp"),
+            'temperature': self.config_manager.get("llm_settings.temperature", 0.7),
+            'max_tokens': self.config_manager.get("llm_settings.max_tokens", 8192),
+        }
+        
+        # Override with agent-specific configuration
+        if agent_name:
+            try:
+                agent_config = self.config_manager.get_agent_config(agent_name)
+                llm_config = agent_config.get('llm', {})
+                config.update(llm_config)
+            except Exception:
+                # If agent config can't be loaded, fall back to global defaults
+                pass
+        
+        # Override with explicit parameters (highest priority)
+        if provider is not None:
+            config['provider'] = provider
+        if temperature is not None:
+            config['temperature'] = temperature
+        
+        config.update(kwargs)
+        return config
+
+    def get_available_providers(self) -> Dict[str, bool]:
+        """Get list of providers and their availability status."""
         return {
-            "provider": self.provider,
-            "temperature": self.config_manager.get("llm_settings.temperature", 0.7),
-            "output_format": self.config_manager.get("llm_settings.output_format", "structured"),
-            "research_depth": self.config_manager.get("llm_settings.research_depth", "standard")
+            provider: self._validate_provider_availability(provider)
+            for provider in self.provider_commands.keys()
+        }
+
+    def validate_config(self) -> Dict[str, Any]:
+        """Validate current configuration and provider availability."""
+        default_provider = self.config_manager.get("llm_settings.default_provider", "gemini")
+        provider_status = self.get_available_providers()
+        
+        return {
+            "default_provider": default_provider,
+            "execution_mode": self.execution_mode,
+            "available_providers": provider_status,
+            "default_provider_available": provider_status.get(default_provider, False)
         }
