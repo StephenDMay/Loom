@@ -8,10 +8,11 @@ from agents.base_agent import BaseAgent
 
 if TYPE_CHECKING:
     from core.llm_manager import LLMManager
+    from core.context_manager import ContextManager
 
 class IssueGeneratorAgent(BaseAgent):
-    def __init__(self, config, llm_manager: 'LLMManager' = None):
-        super().__init__(config, llm_manager)
+    def __init__(self, config, llm_manager: 'LLMManager' = None, context_manager: 'ContextManager' = None):
+        super().__init__(config, llm_manager, context_manager)
         self.output_dir = Path(self.config.get("project.root", Path.cwd())) / "generated-issues"
         self.template_directories = [
             Path(self.config.get("project.root", Path.cwd())) / d
