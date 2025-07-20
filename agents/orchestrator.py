@@ -4,11 +4,13 @@ import importlib.util
 from agents.base_agent import BaseAgent
 from core.config_manager import ConfigManager, AgentConfigManager
 from core.llm_manager import LLMManager
+from core.context_manager import ContextManager
 
 class AgentOrchestrator:
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
         self.llm_manager = LLMManager(config_manager)
+        self.context_manager = ContextManager()
         self.agent_dir = self.config_manager.get("agents.directory", os.path.dirname(os.path.abspath(__file__)))
         self.agents = {}
         self.execution_order = []
@@ -42,7 +44,7 @@ class AgentOrchestrator:
                 agent_class = getattr(module, class_name)
                 if issubclass(agent_class, BaseAgent):
                     agent_config_manager = AgentConfigManager(self.config_manager, agent_name)
-                    self.agents[manifest['name']] = agent_class(config=agent_config_manager, llm_manager=self.llm_manager)
+                    self.agents[manifest['name']] = agent_class(config=agent_config_manager, llm_manager=self.llm_manager, context_manager=self.context_manager)
                 else:
                     print(f"Error loading agent {agent_name}: {class_name} is not a subclass of BaseAgent.")
             except Exception as e:

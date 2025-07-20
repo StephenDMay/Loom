@@ -3,13 +3,14 @@ from typing import Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.llm_manager import LLMManager
+    from core.context_manager import ContextManager
 
 class ExampleAgent(BaseAgent):
     """
     This is a simple example of an agent that inherits from BaseAgent.
     """
-    def __init__(self, config: Optional[Dict] = None, llm_manager: Optional['LLMManager'] = None):
-        super().__init__(config, llm_manager)
+    def __init__(self, config: Optional[Dict] = None, llm_manager: Optional['LLMManager'] = None, context_manager: Optional['ContextManager'] = None):
+        super().__init__(config, llm_manager, context_manager)
 
     def execute(self, task_description: str, *args, **kwargs) -> str:
         """

@@ -3,22 +3,25 @@ from typing import Any, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from core.llm_manager import LLMManager
+    from core.context_manager import ContextManager
 
 class BaseAgent(ABC):
     """
     Abstract base class for all agents.
     """
 
-    def __init__(self, config: Optional[Dict] = None, llm_manager: Optional['LLMManager'] = None):
+    def __init__(self, config: Optional[Dict] = None, llm_manager: Optional['LLMManager'] = None, context_manager: Optional['ContextManager'] = None):
         """
-        Initializes the agent with an optional configuration dictionary and LLM manager.
+        Initializes the agent with an optional configuration dictionary, LLM manager, and context manager.
 
         Args:
             config (Optional[Dict]): Configuration for the agent.
             llm_manager (Optional[LLMManager]): LLM manager instance for making LLM calls.
+            context_manager (Optional[ContextManager]): Context manager instance for sharing state between agents.
         """
         self.config = config or {}
         self.llm_manager = llm_manager
+        self.context_manager = context_manager
 
     @abstractmethod
     def execute(self, *args, **kwargs) -> Any:
