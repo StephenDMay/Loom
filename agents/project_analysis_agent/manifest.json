@@ -1,0 +1,7 @@
+{
+  "name": "project-analysis-agent",
+  "version": "1.0.0",
+  "description": "Analyzes project structure and generates comprehensive summaries for use by other agents.",
+  "entry_point": "agent.py",
+  "class_name": "ProjectAnalysisAgent"
+}

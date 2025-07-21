@@ -39,12 +39,12 @@
 - Use agent-specific provider or fall back to default
 - **Scope**: Single method addition, 20-30 lines of code
 
-**FEATURE-005: Create basic ContextManager class** ⭐ HIGH PRIORITY
+**FEATURE-005: Create basic ContextManager class** ⭐ HIGH PRIORITY **DONE**
 - Create `core/context_manager.py` with simple Dict-based context
 - Implement `create_context(feature_request, project_config)` method
 - **Scope**: New file, basic initialization method, ~40 lines
 
-**FEATURE-006: Add context accumulation to ContextManager** ⭐ HIGH PRIORITY
+**FEATURE-006: Add context accumulation to ContextManager** ⭐ HIGH PRIORITY **DONE**
 - Implement `add_agent_output(context, agent_name, output)` method
 - Store agent outputs with timestamps in context dict
 - **Scope**: Single method addition, 15-20 lines of code

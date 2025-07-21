@@ -1,0 +1,21 @@
+{
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-pro",
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "top_p": 0.9
+  },
+  "project_analysis_agent": {
+    "description": "Configuration for project analysis agent",
+    "max_depth": 3,
+    "project_root": ".",
+    "ignore_patterns": [
+      ".coverage",
+      "*.log",
+      ".vscode",
+      ".idea",
+      "*.tmp"
+    ]
+  }
+}
