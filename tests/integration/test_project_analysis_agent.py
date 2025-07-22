@@ -51,12 +51,63 @@ def test_project_analysis_agent():
             print(f"Summary preview (first 300 chars):\n{stored_analysis[:300]}...")
         else:
             print("\n⚠️ Analysis summary not found in context manager (may be expected if LLM failed)")
+        
+        # Test template loading specifically
+        test_template_loading(agent)
             
         return True
         
     except Exception as e:
         print(f"\n❌ Test failed with error: {e}")
         return False
+
+
+def test_template_loading(agent):
+    """Test the template loading functionality specifically."""
+    print("\n🧪 Testing template loading functionality...")
+    
+    from pathlib import Path
+    
+    # Test template loading with mock context
+    template_path = Path(__file__).parent.parent.parent / "agents" / "project_analysis_agent" / "templates" / "project_analysis_template.md"
+    
+    test_context = {
+        'project_name': 'TestProject',
+        'tech_stack': 'Python',
+        'architecture': 'Modular',
+        'project_root': '/test/path',
+        'feature_request': 'Add new feature',
+        'directory_structure': 'test/\n  main.py',
+        'key_files_content': 'No key files found'
+    }
+    
+    try:
+        processed_template = agent._load_and_prepare_template(template_path, test_context)
+        
+        # Verify that placeholders were replaced
+        if '{{ project_name }}' not in processed_template and 'TestProject' in processed_template:
+            print("✅ Template loading and placeholder replacement working correctly")
+        else:
+            print("❌ Template placeholders not properly replaced")
+            
+        # Check that template structure is maintained
+        if "# Project Analysis Instructions" in processed_template:
+            print("✅ Template structure preserved")
+        else:
+            print("❌ Template structure not preserved")
+            
+    except Exception as e:
+        print(f"❌ Template loading test failed: {e}")
+        
+    # Test fallback behavior with non-existent template
+    try:
+        fake_path = Path("/nonexistent/template.md")
+        agent._load_and_prepare_template(fake_path, test_context)
+        print("❌ Template should have failed with non-existent file")
+    except FileNotFoundError:
+        print("✅ Proper error handling for missing template file")
+    except Exception as e:
+        print(f"❌ Unexpected error for missing template: {e}")
 
 
 if __name__ == "__main__":
