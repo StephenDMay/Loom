@@ -78,6 +78,15 @@ class AgentOrchestrator:
         for i, agent in enumerate(self.execution_order):
             agent_name = list(self.agents.keys())[list(self.agents.values()).index(agent)]
             print(f"Executing agent {i+1}/{len(self.execution_order)}: {agent_name}...")
-            output = agent.execute(current_input)
-            current_input = output
+            
+            # Special handling for different agent types
+            if agent_name == "project-analysis-agent":
+                # Project analysis agent stores results in context, pass original task
+                output = agent.execute(initial_task)
+                # Don't update current_input - keep the original task for subsequent agents
+            else:
+                # For other agents like issue_generator, use the original task
+                # They can access project analysis via context_manager if needed
+                output = agent.execute(initial_task)
+                current_input = output
         return current_input
