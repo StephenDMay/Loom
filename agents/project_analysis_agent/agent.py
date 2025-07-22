@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Dict, Optional, TYPE_CHECKING, Set
 from agents.base_agent import BaseAgent
+import re
 
 if TYPE_CHECKING:
     from core.llm_manager import LLMManager
@@ -117,6 +118,42 @@ class ProjectAnalysisAgent(BaseAgent):
                     
         return "\n".join(content)
 
+    def _load_and_prepare_template(self, template_path: Path, context: Dict) -> str:
+        """
+        Load and process a markdown template file, replacing placeholders with dynamic content.
+        
+        Args:
+            template_path: Path to the template file
+            context: Dictionary containing placeholder values
+            
+        Returns:
+            Processed template with placeholders replaced
+            
+        Raises:
+            FileNotFoundError: If template file doesn't exist
+            Exception: For other template processing errors
+        """
+        try:
+            if not template_path.exists():
+                raise FileNotFoundError(f"Template file not found: {template_path}")
+                
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+            
+            # Replace placeholders in the format {{ placeholder_name }}
+            def replace_placeholder(match):
+                placeholder_name = match.group(1).strip()
+                return str(context.get(placeholder_name, f"{{{{ {placeholder_name} }}}}"))
+            
+            processed_content = re.sub(r'\{\{\s*([^}]+)\s*\}\}', replace_placeholder, template_content)
+            
+            return processed_content
+            
+        except FileNotFoundError:
+            raise
+        except Exception as e:
+            raise Exception(f"Error processing template {template_path}: {e}")
+
     def execute(self, *args, **kwargs) -> str:
         """
         Execute the project analysis.
@@ -132,8 +169,26 @@ class ProjectAnalysisAgent(BaseAgent):
             # Get key files content
             key_files_content = self._get_key_files_content()
             
-            # Create the analysis prompt for the LLM
-            analysis_prompt = f"""
+            # Prepare template context
+            template_context = {
+                'project_name': self.project_root.name,
+                'tech_stack': 'To be analyzed',
+                'architecture': 'To be analyzed',
+                'project_root': str(self.project_root),
+                'feature_request': kwargs.get('feature_request', 'General project analysis'),
+                'directory_structure': directory_structure,
+                'key_files_content': key_files_content
+            }
+            
+            # Try to load and use template
+            template_path = Path(__file__).parent / "templates" / "project_analysis_template.md"
+            
+            try:
+                analysis_prompt = self._load_and_prepare_template(template_path, template_context)
+            except (FileNotFoundError, Exception) as template_error:
+                # Fall back to hardcoded prompt if template fails
+                self._log_error(f"Template loading failed: {template_error}. Using fallback prompt.")
+                analysis_prompt = f"""
 Please analyze the following project structure and provide a comprehensive summary.
 
 PROJECT DIRECTORY STRUCTURE:
