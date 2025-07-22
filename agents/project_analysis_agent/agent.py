@@ -154,10 +154,13 @@ class ProjectAnalysisAgent(BaseAgent):
         except Exception as e:
             raise Exception(f"Error processing template {template_path}: {e}")
 
-    def execute(self, *args, **kwargs) -> str:
+    def execute(self, feature_request: str = "General project analysis", *args, **kwargs) -> str:
         """
         Execute the project analysis.
         
+        Args:
+            feature_request: The specific feature request to focus the analysis on
+            
         Returns:
             A string containing the analysis summary
         """
@@ -175,7 +178,7 @@ class ProjectAnalysisAgent(BaseAgent):
                 'tech_stack': 'To be analyzed',
                 'architecture': 'To be analyzed',
                 'project_root': str(self.project_root),
-                'feature_request': kwargs.get('feature_request', 'General project analysis'),
+                'feature_request': feature_request,
                 'directory_structure': directory_structure,
                 'key_files_content': key_files_content
             }
