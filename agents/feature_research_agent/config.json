@@ -1,0 +1,13 @@
+{
+  "llm": {
+    "provider": "gemini",
+    "model": "gemini-pro",
+    "temperature": 0.3,
+    "max_tokens": 4096,
+    "top_p": 0.9
+  },
+  "feature_research_agent": {
+    "description": "Configuration for feature research agent",
+    "template_path": "templates/feature_research_template.md"
+  }
+}

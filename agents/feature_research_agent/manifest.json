@@ -1,0 +1,7 @@
+{
+  "name": "feature-research-agent",
+  "version": "1.0.0",
+  "description": "Analyzes feature requests and generates comprehensive research and implementation specifications.",
+  "entry_point": "agent.py",
+  "class_name": "FeatureResearchAgent"
+}

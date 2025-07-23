@@ -51,23 +51,27 @@
 
 ### Core Agents (Essential)
 
-**FEATURE-007: Create ProjectAnalysisAgent class structure** ⭐ HIGH PRIORITY
+**FEATURE-007: Create ProjectAnalysisAgent class structure** ⭐ HIGH PRIORITY **DONE**
 - Create `agents/project_analysis_agent/agent.py` and `manifest.json`
 - Implement basic `execute()` method that accepts context
 - Integrate with LLMManager for provider choice
 - **Scope**: New agent file structure, basic execute method, ~50 lines
 
-**FEATURE-008: Add codebase scanning to ProjectAnalysisAgent** ⭐ HIGH PRIORITY
+**FEATURE-008: Add codebase scanning to ProjectAnalysisAgent** ⭐ HIGH PRIORITY **DONE**
 - Implement basic file system traversal in execute method
 - Generate file listing with simple filtering (.git, node_modules exclusion)
 - Extract sample code snippets from key files
 - **Scope**: File scanning logic within existing agent, ~40-60 lines
 
-**FEATURE-009: Add project analysis template processing** ⭐ HIGH PRIORITY
+**FEATURE-009: Add project analysis template processing** ⭐ HIGH PRIORITY **DONE**
 - Create basic `project_analysis.md` template file
 - Implement template loading and placeholder replacement
 - Generate structured output using LLM with template
 - **Scope**: Template file + template processing logic, ~30 lines code + template
+
+
+***SPLITTING INTO FURTHER TAKS*** see TemplateDesignMvp.md
+
 
 **FEATURE-010: Create FeatureResearchAgent class structure** ⭐ HIGH PRIORITY  
 - Create `agents/feature_research_agent/agent.py` and `manifest.json`
@@ -87,7 +91,7 @@
 - Generate structured research output using LLM with template
 - **Scope**: Template file + template processing logic, ~30 lines code + template
 
-**FEATURE-013: Create PromptAssemblyAgent class structure** ⭐ HIGH PRIORITY
+**FEATURE-013: Create PromptAssemblyAgent class structure** ⭐ HIGH PRIORITY 
 - Create `agents/prompt_assembly_agent/agent.py` and `manifest.json` 
 - Implement basic `execute()` method that accepts full context
 - Integrate with LLMManager for provider choice
