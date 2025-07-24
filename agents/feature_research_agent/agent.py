@@ -42,19 +42,12 @@ class FeatureResearchAgent(BaseAgent):
         if self.context_manager is None:
             return context_data
         
-        # Define context keys that would be useful for feature research
-        useful_context_keys = [
-            'project_analysis_summary',
-            'project_analysis_result', 
-            'tech_stack_info',
-            'project_structure',
-            'codebase_patterns',
-            'existing_features'
-        ]
+        # Dynamically discover all available context keys using the keys() method
+        all_context_keys = list(self.context_manager.keys())
         
-        for key in useful_context_keys:
+        for key in all_context_keys:
             value = self.context_manager.get(key)
-            if value is not None:
+            if value is not None and str(value).strip():  # Only include non-empty values
                 # Create a more readable key name for the template
                 readable_key = key.replace('_', ' ').title()
                 context_data[readable_key] = str(value)
