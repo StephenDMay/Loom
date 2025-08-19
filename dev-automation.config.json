@@ -30,8 +30,6 @@
     "auto_assign": true
   },
   "agent_execution_order": [
-     "project-analysis-agent",
-    "feature-research-agent", 
     "issue_generator"
   ]
 }

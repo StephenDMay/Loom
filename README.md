@@ -223,7 +223,7 @@ python loom.py "implement user roles and permissions"
 python loom.py "implement user roles and permissions"
 
 # Use the generated file with GitHub CLI
-gh issue create --body-file generated-issues/[timestamp]_feature.md --label "enhancement"
+gh issue create --body-file generated-issues/YYYY-MM-DD-HHMMSS-feature-slug.md --label "enhancement"
 ```
 
 ### GitHub CLI Setup

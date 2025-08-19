@@ -42,19 +42,19 @@
 
 ### FeatureResearchAgent (Features 10-12)
 
-**FEATURE-010: Create FeatureResearchAgent class structure** ⭐ HIGH PRIORITY  
+**FEATURE-010: Create FeatureResearchAgent class structure** ⭐ HIGH PRIORITY  **DONE**
 - Create `agents/feature_research_agent/agent.py` and `manifest.json`
 - Implement `execute(feature_request: str)` method that opportunistically reads context
 - NO required context dependencies - agent works standalone or enhanced
 - **Scope**: New agent file structure, context discovery logic, ~60 lines
 
-**FEATURE-011: Add context-aware research logic to FeatureResearchAgent** ⭐ HIGH PRIORITY
+**FEATURE-011: Add context-aware research logic to FeatureResearchAgent** ⭐ HIGH PRIORITY **DONE**
 - Implement `_gather_available_context()` method for opportunistic context discovery
 - Build research prompt that includes whatever context is available
 - LLM interprets context relevance and fills gaps intelligently
 - **Scope**: Context gathering + prompt building logic, ~40-50 lines
 
-**FEATURE-012: Add research template with smart context handling** ⭐ HIGH PRIORITY
+**FEATURE-012: Add research template with smart context handling** ⭐ HIGH PRIORITY **DONE**
 - Create `feature_research_template.md` with conditional context sections
 - Template includes context when available, provides fallbacks when missing
 - LLM given explicit instructions to work with partial information

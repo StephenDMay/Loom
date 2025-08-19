@@ -1,0 +1,7 @@
+{
+  "name": "prompt-assembly-agent",
+  "version": "1.0.0",
+  "description": "Dynamically constructs prompts by combining templates, context, and user input for other agents.",
+  "entry_point": "agent.py",
+  "class_name": "PromptAssemblyAgent"
+}

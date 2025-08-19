@@ -128,5 +128,46 @@ class TestIssueGeneratorAgent(unittest.TestCase):
         self.assertIn("Error: Meta-prompt template not found", result)
         self.assertFalse(mock_subprocess_run.called) # LLM should not be invoked
 
+    def test_extract_title_from_markdown(self):
+        agent = IssueGeneratorAgent(self.mock_config_manager)
+        
+        # Test with FEATURE: format
+        content = "# FEATURE: Readable and Searchable Issue Filenames\n\n## EXECUTIVE SUMMARY"
+        title = agent._extract_title_from_markdown(content)
+        self.assertEqual(title, "Readable and Searchable Issue Filenames")
+        
+        # Test with regular heading
+        content = "# Implement User Authentication\n\n## Details"
+        title = agent._extract_title_from_markdown(content)
+        self.assertEqual(title, "Implement User Authentication")
+        
+        # Test with no title
+        content = "Some content without a proper title"
+        title = agent._extract_title_from_markdown(content)
+        self.assertEqual(title, "")
+
+    def test_slugify(self):
+        agent = IssueGeneratorAgent(self.mock_config_manager)
+        
+        # Test normal case
+        slug = agent._slugify("Readable and Searchable Issue Filenames")
+        self.assertEqual(slug, "readable-and-searchable-issue-filenames")
+        
+        # Test with special characters
+        slug = agent._slugify("Feature: Add User @Auth & Permissions!")
+        self.assertEqual(slug, "feature-add-user-auth-permissions")
+        
+        # Test with multiple spaces
+        slug = agent._slugify("Multiple   Spaces    Here")
+        self.assertEqual(slug, "multiple-spaces-here")
+        
+        # Test empty string
+        slug = agent._slugify("")
+        self.assertEqual(slug, "")
+        
+        # Test with leading/trailing spaces and hyphens
+        slug = agent._slugify("  --Title with Issues--  ")
+        self.assertEqual(slug, "title-with-issues")
+
 if __name__ == '__main__':
     unittest.main()
