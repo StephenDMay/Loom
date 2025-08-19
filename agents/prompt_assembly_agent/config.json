@@ -1,0 +1,6 @@
+{
+  "prompt_assembly_agent": {
+    "description": "Configuration for prompt assembly agent",
+    "templates_directory": "templates"
+  }
+}

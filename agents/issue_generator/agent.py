@@ -27,6 +27,41 @@ class IssueGeneratorAgent(BaseAgent):
                 return template_path
         return None
 
+    def _extract_title_from_markdown(self, content: str) -> str:
+        """Extract the feature title from markdown content."""
+        lines = content.split('\n')
+        for line in lines:
+            line = line.strip()
+            # Look for "# FEATURE:" pattern
+            if line.startswith('# FEATURE:'):
+                title = line.replace('# FEATURE:', '').strip()
+                if title:
+                    return title
+            # Fallback to any # heading
+            elif line.startswith('# '):
+                title = line.replace('#', '').strip()
+                if title and not title.lower().startswith('feature'):
+                    return title
+        return ""
+
+    def _slugify(self, text: str) -> str:
+        """Convert text to a URL-friendly slug."""
+        if not text:
+            return ""
+        
+        # Convert to lowercase and replace spaces with hyphens
+        slug = text.lower()
+        # Remove or replace special characters
+        slug = re.sub(r'[^\w\s-]', '', slug)
+        # Replace multiple spaces/hyphens with single hyphen
+        slug = re.sub(r'[-\s]+', '-', slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip('-')
+        # Limit length to reasonable size
+        slug = slug[:60]
+        
+        return slug
+
     def _extract_structured_output(self, raw_result: str) -> str:
         """Extract structured output from LLM response, handling various formats"""
         # First, try to find the exact feature marker
@@ -101,12 +136,6 @@ class IssueGeneratorAgent(BaseAgent):
         # Create output directory
         self.output_dir.mkdir(exist_ok=True)
         
-        # Generate timestamp and safe filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_feature = re.sub(r'[^\w\-_]', '_', feature_description)
-        safe_feature = safe_feature[:50]
-        output_file = self.output_dir / f"{timestamp}_{safe_feature}.md"
-        
         # Execute LLM call using LLMManager
         if not self.llm_manager:
             return "Error: LLMManager not available"
@@ -118,6 +147,23 @@ class IssueGeneratorAgent(BaseAgent):
 
         # Extract structured output
         result = self._extract_structured_output(raw_result)
+
+        # Generate filename after content is created
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+        
+        # Extract title and create slug
+        title = self._extract_title_from_markdown(result)
+        slug = self._slugify(title)
+        
+        # Fallback to safe feature description if no title found
+        if not slug:
+            safe_feature = re.sub(r'[^\w\-_]', '_', feature_description)
+            safe_feature = safe_feature[:50]
+            slug = self._slugify(safe_feature.replace('_', ' '))
+            if not slug:
+                slug = "untitled-feature"
+        
+        output_file = self.output_dir / f"{timestamp}-{slug}.md"
 
         # Write to file
         with open(output_file, 'w') as f:
