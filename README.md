@@ -1,33 +1,34 @@
-# Universal Development Issue Generator
+# Loom: The Universal Development Agent Platform
 
-A meta-prompt system that automates feature research and GitHub issue creation for any software project. Inspired by the "prompt that builds other prompts" concept for streamlining development workflow planning.
+Loom weaves feature requests into comprehensive coding prompts through LLM-driven sequential analysis. Named after the art of weaving disparate threads into cohesive fabric, Loom transforms raw ideas into structured, actionable development plans.
+
+Designed for developers who want to automate the software development lifecycle while retaining complete control over the AI models used at every stage. The core philosophy is **"Meet Developers Where They Are"** - Loom is model-agnostic, allowing you to use any AI model or tool at any step of the process.
 
 ## 🎯 What It Does
 
-Transforms this:
-```bash
-python dev-issue.py "implement real-time tournament bracket tracking"
-```
+Loom orchestrates a sequence of specialized AI agents to perform a series of tasks, starting with a simple feature request.
 
-Into this:
-- Comprehensive feature research document
-- Technical implementation specification  
-- Risk assessment and mitigation strategies
-- Ready-to-use GitHub issue with acceptance criteria
-- Effort estimates and dependency analysis
+**Example Workflow:**
+1. **You provide a task**: `python loom.py "implement real-time tournament bracket tracking"`
+2. **Project Analysis Agent**: Scans your codebase to understand existing patterns, tech stack, and conventions.
+3. **Feature Research Agent**: Uses the project context to research the best technical approaches and implementation strategies for the feature.
+4. **Prompt Assembly Agent**: Synthesizes all the gathered information into a detailed, context-aware coding prompt, ready for an implementation LLM.
+
+The final output is a high-quality, actionable prompt that you can feed into your coding LLM of choice to get consistent and contextually-aware code.
 
 ## 🚀 Quick Start
 
 ### 1. Installation
 ```bash
-# Clone or download the generator
-git clone [repository-url] ~/AutoDev
-cd ~/AutoDev
+# Clone the repository
+git clone [repository-url] ~/Loom
+cd ~/Loom
 
 # Ensure Python 3.7+ is installed
 python --version
 
-# No additional Python packages required - uses only standard library
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ### 2. Configuration
@@ -35,46 +36,55 @@ python --version
 # Navigate to your project directory
 cd /path/to/your/project
 
-# Interactive setup for your project
-python ~/AutoDev/dev-issue.py init
+# Copy and configure the project settings
+cp ~/Loom/dev-automation.config.json .
+# Edit dev-automation.config.json with your project details
 ```
 
-### 3. Generate Your First Issue
+### 3. Run Your First Agent Sequence
 ```bash
-# Basic usage
-python ~/AutoDev/dev-issue.py "implement user authentication system"
+# Basic usage - runs the configured agent sequence
+python ~/Loom/loom.py "implement user authentication system"
 
-# Template-specific shortcuts
-python ~/AutoDev/dev-issue.py --template data "optimize Limitless API sync pipeline"
-python ~/AutoDev/dev-issue.py --template ui "improve dashboard performance metrics"
-python ~/AutoDev/dev-issue.py --template api "add tournament bracket endpoints"
-python ~/AutoDev/dev-issue.py --template perf "implement Redis caching layer"
+# Validate your configuration
+python ~/Loom/loom.py --validate-config
 ```
 
 ### 4. Optional: Create Global Command
 **Windows:**
-Create `dev-issue.bat` in a directory in your PATH:
+Create `loom.bat` in a directory in your PATH:
 ```batch
 @echo off
-python "C:\path\to\AutoDev\dev-issue.py" %*
+python "C:\path\to\Loom\loom.py" %*
 ```
 
 **Mac/Linux:**
 Create a symlink or alias:
 ```bash
 # Symlink approach
-ln -s ~/AutoDev/dev-issue.py /usr/local/bin/dev-issue
+ln -s ~/Loom/loom.py /usr/local/bin/loom
 
 # Or add alias to your shell profile
-echo 'alias dev-issue="python ~/AutoDev/dev-issue.py"' >> ~/.bashrc
+echo 'alias loom="python ~/Loom/loom.py"' >> ~/.bashrc
 ```
 
 ## 📁 Project Structure
 
 ```
-~/AutoDev/
-├── dev-issue.py                    # Main Python script
-├── meta-prompt-template.md         # Universal meta-prompt template
+~/Loom/
+├── loom.py                         # Main entry point
+├── agents/                         # Agent directory
+│   ├── orchestrator.py             # Agent orchestration engine
+│   ├── base_agent.py               # Base class for all agents
+│   ├── project_analysis_agent/     # Analyzes codebase structure
+│   ├── feature_research_agent/     # Researches implementation approaches
+│   ├── prompt_assembly_agent/      # Assembles final coding prompts
+│   └── issue_generator/             # Legacy issue generation
+├── core/                           # Core system components
+│   ├── config_manager.py           # Configuration management
+│   ├── llm_manager.py              # LLM provider abstraction
+│   └── context_manager.py          # Cross-agent context sharing
+├── requirements.txt                # Python dependencies
 └── README.md                       # This file
 
 # Per-project files (created in your project directory):
@@ -87,19 +97,24 @@ your-project/
 
 ## 🛠️ Configuration
 
-Each project gets its own `dev-automation.config.json` file created by running `python dev-issue.py init`.
+Each project gets its own `dev-automation.config.json` file that configures the agent execution sequence and LLM providers.
 
 ### Project Settings
 ```json
 {
   "project": {
-    "name": "Your Project Name",
-    "context": "What your project does and its domain",
-    "tech_stack": "Technologies, frameworks, languages used",
-    "architecture": "High-level architectural pattern",
-    "target_users": "Primary user base and characteristics",
-    "constraints": "Technical, business, regulatory constraints"
-  }
+    "name": "Loom",
+    "context": "A flexible system that automates the software development lifecycle",
+    "tech_stack": "Python, markdown",
+    "architecture": "Open orchestration",
+    "target_users": "Developers",
+    "constraints": "Model API Differences, Context Management, Output Consistency"
+  },
+  "agent_execution_order": [
+    "project-analysis-agent",
+    "feature-research-agent", 
+    "prompt-assembly-agent"
+  ]
 }
 ```
 
@@ -145,40 +160,53 @@ Each project gets its own `dev-automation.config.json` file created by running `
 
 ## 🎪 Usage Examples
 
-### Basic Feature Generation
+### Basic Agent Execution
 ```bash
-# Generate comprehensive research for any feature
-python dev-issue.py "implement OAuth2 authentication"
-python dev-issue.py "add real-time notifications"
-python dev-issue.py "optimize database query performance"
+# Run the configured agent sequence
+python loom.py "implement OAuth2 authentication"
+python loom.py "add real-time notifications"
+python loom.py "optimize database query performance"
 ```
 
-### Template-Specific Generation
+### Configuration Validation
 ```bash
-# UI/UX features
-python dev-issue.py --template ui "redesign user dashboard with accessibility improvements"
-
-# Backend/API features  
-python dev-issue.py --template api "implement rate limiting with Redis"
-
-# Data pipeline features
-python dev-issue.py --template data "build ETL pipeline for external API integration"
-
-# Performance optimization
-python dev-issue.py --template perf "optimize React bundle size and loading speed"
+# Validate your LLM providers and configuration
+python loom.py --validate-config
 ```
 
-### Advanced Usage
-```bash
-# Override LLM provider
-python dev-issue.py --provider claude-code "implement microservices architecture"
+## 🤖 Agent System
 
-# Use custom config file
-python dev-issue.py --config ./enterprise-project.json "add SAML SSO integration"
+Loom's power comes from its orchestrated multi-agent architecture. Each agent specializes in a specific aspect of the development workflow:
 
-# Dry run (generate prompt without executing LLM)
-python dev-issue.py --dry-run "implement blockchain integration"
-```
+### Agent Types
+
+**Project Analysis Agent**: Scans your codebase to understand:
+- Existing patterns and conventions
+- Technology stack and dependencies  
+- Architecture and file structure
+- Coding standards and practices
+
+**Feature Research Agent**: Conducts comprehensive research on:
+- Best practices for the requested feature
+- Implementation approaches and alternatives
+- Integration considerations with existing codebase
+- Potential risks and mitigation strategies
+
+**Prompt Assembly Agent**: Synthesizes information to create:
+- Context-aware coding prompts
+- Detailed implementation specifications
+- Code examples following project conventions
+- Ready-to-use prompts for any LLM
+
+### Agent Orchestration
+
+The `AgentOrchestrator` manages the execution sequence:
+1. Loads agents dynamically from the `agents/` directory
+2. Executes them in the order specified in `agent_execution_order`
+3. Manages context sharing between agents via `ContextManager`
+4. Handles LLM provider abstraction through `LLMManager`
+
+Agents communicate through a shared context, allowing later agents to build upon the work of earlier ones.
 
 ## 🔧 GitHub Integration
 
@@ -186,13 +214,13 @@ python dev-issue.py --dry-run "implement blockchain integration"
 When `auto_create_issues` is enabled in your config:
 ```bash
 # This will automatically create a GitHub issue with full specification
-python dev-issue.py "implement user roles and permissions"
+python loom.py "implement user roles and permissions"
 ```
 
 ### Manual Issue Creation
 ```bash
 # Generate specification file
-python dev-issue.py "implement user roles and permissions"
+python loom.py "implement user roles and permissions"
 
 # Use the generated file with GitHub CLI
 gh issue create --body-file generated-issues/[timestamp]_feature.md --label "enhancement"
@@ -214,13 +242,13 @@ The beauty of this system is that you can use one installation across multiple p
 ```bash
 # Project A
 cd ~/projects/my-web-app
-python ~/AutoDev/dev-issue.py init  # Creates config for this project
-python ~/Loom/dev-issue.py "add user authentication"
+cp ~/Loom/dev-automation.config.json .  # Copy and customize config
+python ~/Loom/loom.py "add user authentication"
 
 # Project B  
 cd ~/projects/my-mobile-app
-python ~/Loom/dev-issue.py init  # Creates different config for this project
-python ~/Loom/dev-issue.py "implement offline sync"
+cp ~/Loom/dev-automation.config.json .  # Copy and customize config
+python ~/Loom/loom.py "implement offline sync"
 
 # Each project gets its own config and generated-issues folder
 ```
@@ -281,4 +309,4 @@ MIT License - Use this system for any project, commercial or personal.
 
 ---
 
-**🎯 The Goal**: Transform feature ideas into well-researched, actionable development tasks in minutes instead of hours. Fix problems at the planning stage through comprehensive upfront research and technical specification.
+**🎯 The Goal**: Weave feature ideas into well-researched, context-aware coding prompts through intelligent agent orchestration. Transform raw concepts into actionable development plans that understand your codebase, follow your patterns, and integrate seamlessly with your workflow.
