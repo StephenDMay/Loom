@@ -39,6 +39,10 @@ cd /path/to/your/project
 # Copy and configure the project settings
 cp ~/Loom/dev-automation.config.json .
 # Edit dev-automation.config.json with your project details
+
+# Copy and configure the default template
+cp ~/Loom/meta-prompt-template.md .
+# Edit meta template to meet your project details, this is the default template used if specific ones are not provided at each step.
 ```
 
 ### 3. Run Your First Agent Sequence
