@@ -72,6 +72,83 @@ Provide broader context that supports feature development:
 
 ## Output Guidelines
 
-Structure your analysis with clear headings and include specific examples from the codebase when possible. Focus on patterns that would guide new feature implementation rather than exhaustive code documentation.
+**Format Requirements**: Structure your analysis using the exact sections below with clear headings and include specific file paths, function names, and code patterns from the codebase.
 
-Your analysis will be used by other agents to research implementation approaches and assemble coding prompts, so emphasize actionable insights over general observations.
+**Content Focus**: Emphasize actionable patterns and specific implementation details rather than general observations. Your analysis will be consumed by Feature Research and Prompt Assembly agents.
+
+### Required Output Structure
+
+#### 1. Feature-Specific Implementation Guide
+
+**Relevant Components Analysis**
+- List specific files/modules that relate to this feature domain (with file paths)
+- Identify existing patterns that should be replicated or extended
+- Point to similar functionality with specific function/class names
+- Map out which files will likely need modification
+
+**Example:**
+```
+- Authentication patterns found in: auth/handlers.py:authenticate_user()
+- Similar UI components in: components/UserProfile.tsx (lines 45-67)
+- Database models to extend: models/User.py:UserModel class
+```
+
+**Integration Points**
+- Specific APIs, services, or modules this feature must integrate with
+- Authentication/authorization mechanisms in use (with code references)
+- Data flow patterns between components (with specific examples)
+- Configuration files that may need updates
+
+**Technical Constraints & Requirements**
+- Performance requirements based on existing similar features
+- Security patterns that must be followed (with examples)
+- Error handling conventions (with code examples)
+- Testing approaches used for similar features
+
+#### 2. Technology Stack Summary
+
+**Core Technologies** (with versions where identifiable)
+- Primary framework/language and version
+- Database system and ORM/query library
+- Frontend framework and UI libraries
+- Build tools and development workflow
+
+**Architecture Patterns**
+- Overall architectural style (MVC, microservices, layered, etc.)
+- Design patterns in frequent use (with specific examples)
+- Code organization principles
+- Dependency injection or service location patterns
+
+**Development Standards**
+- Code style and formatting conventions (linting tools, etc.)
+- Testing strategy and frameworks in use
+- Documentation standards
+- Git workflow and branch naming conventions
+
+#### 3. Implementation Recommendations
+
+Based on the analysis, provide specific guidance:
+
+**Suggested Implementation Approach**
+- Which existing code should serve as the template/starting point
+- Recommended file structure for the new feature
+- Specific classes/functions to inherit from or integrate with
+
+**Code Examples to Follow**
+- Point to exemplary implementations of similar features
+- Highlight code patterns that should be replicated
+- Identify utility functions/classes that should be leveraged
+
+**Files to Modify vs Create**
+- Explicit list of files that need modification (with reasons)
+- Suggested new files with recommended locations
+- Configuration or deployment files that need updates
+
+### Quality Requirements
+
+- Include specific file paths using forward slashes (e.g., `src/components/UserAuth.js`)
+- Reference actual function/class names from the codebase
+- Provide line number ranges for significant code patterns when helpful
+- Use code blocks for specific examples or patterns
+- Quantify recommendations where possible (file sizes, performance metrics, etc.)
+- Address both happy path and error handling patterns

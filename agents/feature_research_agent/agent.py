@@ -91,7 +91,7 @@ class FeatureResearchAgent(BaseAgent):
             feature_description: The feature description to analyze
             
         Returns:
-            A string containing the populated template with the feature description and context
+            A string containing the LLM-generated feature research based on the template and context
         """
         
         try:
@@ -101,14 +101,38 @@ class FeatureResearchAgent(BaseAgent):
             # Discover available context
             available_context = self._discover_available_context()
             
-            # Render template with simple string replacement approach
+            # Render template with context data to create the prompt
             populated_template = self._render_template(template_content, feature_description, available_context)
             
-            # Store the result in context manager if available
-            if self.context_manager is not None:
-                self.context_manager.set('feature_research_result', populated_template)
-            
-            return populated_template
+            # Use LLM to generate research based on the populated template
+            if self.llm_manager:
+                try:
+                    research_result = self.llm_manager.execute(
+                        populated_template, 
+                        agent_name="feature_research_agent"
+                    )
+                    
+                    # Store the result in context manager
+                    if self.context_manager is not None:
+                        self.context_manager.set('feature_research_result', research_result)
+                    
+                    return f"Feature research completed successfully.\n\n{research_result}"
+                    
+                except Exception as e:
+                    error_msg = f"LLM research failed: {e}"
+                    
+                    # Fallback to template-only result
+                    if self.context_manager is not None:
+                        self.context_manager.set('feature_research_result', populated_template)
+                        self.context_manager.set('feature_research_error', error_msg)
+                    
+                    return f"Feature research template populated, but LLM analysis failed: {e}\n\nTemplate result stored in context manager."
+            else:
+                # No LLM available - fallback to template only
+                if self.context_manager is not None:
+                    self.context_manager.set('feature_research_result', populated_template)
+                
+                return f"Feature research template populated (no LLM available for analysis).\n\nTemplate result stored in context manager."
             
         except Exception as e:
             error_msg = f"Feature research failed: {e}"

@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, TYPE_CHECKING
 from agents.base_agent import BaseAgent
@@ -20,6 +21,9 @@ class PromptAssemblyAgent(BaseAgent):
         # Get templates directory from config
         self.templates_directory = self.config.get('prompt_assembly_agent', {}).get('templates_directory', 'templates')
         self.templates_path = Path(__file__).parent / self.templates_directory
+        
+        # Set up output directory (same as issue generator)
+        self.output_dir = Path(self.config.get("project.root", Path.cwd())) / "generated-issues"
 
     def _load_template(self, template_name: str) -> str:
         """
@@ -44,7 +48,13 @@ class PromptAssemblyAgent(BaseAgent):
             with open(template_file_path, 'r', encoding='utf-8') as f:
                 return f.read()
         except FileNotFoundError:
-            raise FileNotFoundError(f"Template file not found: {template_file_path}")
+            # Try to use default template if specified template not found
+            default_template_path = self.templates_path / 'example_template.md'
+            try:
+                with open(default_template_path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Template file not found: {template_file_path} and default template not found: {default_template_path}")
         except Exception as e:
             raise Exception(f"Error loading template '{template_name}': {e}")
 
@@ -98,43 +108,198 @@ class PromptAssemblyAgent(BaseAgent):
             result = re.sub(context_placeholder_pattern, str(value), result)
             
         return result
+    
+    def _get_next_sequence_number(self) -> int:
+        """Get the next sequential number for file naming."""
+        if not self.output_dir.exists():
+            return 1
+        
+        # Find all existing files with sequential numbering (format: 001-feature-name.md)
+        existing_files = list(self.output_dir.glob("*.md"))
+        max_number = 0
+        
+        for file_path in existing_files:
+            # Only look for files that match our sequential numbering pattern
+            match = re.match(r'^(\d{3})-', file_path.name)
+            if match:
+                number = int(match.group(1))
+                max_number = max(max_number, number)
+        
+        # If no sequential files exist, start at 1
+        return max_number + 1
+    
+    def _slugify(self, text: str) -> str:
+        """Convert text to a URL-friendly slug."""
+        if not text:
+            return "untitled-feature"
+        
+        # Convert to lowercase and replace spaces with hyphens
+        slug = text.lower()
+        # Remove or replace special characters
+        slug = re.sub(r'[^\w\s-]', '', slug)
+        # Replace multiple spaces/hyphens with single hyphen
+        slug = re.sub(r'[-\s]+', '-', slug)
+        # Remove leading/trailing hyphens
+        slug = slug.strip('-')
+        # Limit length to reasonable size
+        slug = slug[:50]
+        
+        return slug if slug else "untitled-feature"
+    
+    def _extract_title_from_content(self, content: str) -> str:
+        """Extract a title from the generated content."""
+        lines = content.split('\n')
+        for line in lines:
+            line = line.strip()
+            # Look for markdown headers
+            if line.startswith('# '):
+                title = line.replace('#', '').strip()
+                if title and len(title) > 3:  # Avoid very short titles
+                    return title
+            # Look for "Development Task:" pattern
+            elif 'Development Task:' in line:
+                title = line.split('Development Task:')[-1].strip()
+                if title:
+                    return title
+        return ""
+    
+    def _clean_llm_output(self, content: str) -> str:
+        """Remove unwanted markdown code block markers from LLM output."""
+        # Remove opening code block markers
+        content = re.sub(r'^```\w*\n?', '', content, flags=re.MULTILINE)
+        # Remove closing code block markers
+        content = re.sub(r'\n?```\s*$', '', content, flags=re.MULTILINE)
+        # Clean up any extra whitespace
+        content = content.strip()
+        return content
 
-    def execute(self, template_name: str, placeholders: Optional[Dict[str, str]] = None, context_keys: Optional[List[str]] = None, *args, **kwargs) -> str:
+    def execute(self, task_description: str, *args, **kwargs) -> str:
         """
         Execute the prompt assembly process.
         
+        Like other agents, this loads a template, populates it with context, and uses LLM to generate final output.
+        
         Args:
-            template_name: Name of the template to load
-            placeholders: Dictionary of placeholder keys and their replacement values
-            context_keys: List of context keys to retrieve and inject
+            task_description: The task description to work with
             
         Returns:
-            Fully assembled prompt as a string
-            
-        Raises:
-            FileNotFoundError: If template doesn't exist
-            Exception: If assembly process fails
+            LLM-generated final prompt/output based on template and all gathered context
         """
         try:
-            # Set defaults
-            placeholders = placeholders or {}
-            context_keys = context_keys or []
+            # Load the default template
+            template_content = self._load_template('example_template.md')
             
-            # Load the template
-            template_content = self._load_template(template_name)
-            
-            # Get context values
-            context_values = self._get_context_values(context_keys)
-            
-            # Replace placeholders and context
-            assembled_prompt = self._replace_placeholders(template_content, placeholders, context_values)
-            
-            # Store the result in context manager if available
+            # Gather all available context automatically
+            all_context = {}
             if self.context_manager is not None:
-                self.context_manager.set('assembled_prompt', assembled_prompt)
-                self.context_manager.set('last_template_used', template_name)
+                for key in self.context_manager.keys():
+                    value = self.context_manager.get(key)
+                    if value is not None:
+                        all_context[key] = str(value)
             
-            return assembled_prompt
+            # Create context section from all available context
+            context_section = ""
+            for key, value in all_context.items():
+                readable_key = key.replace('_', ' ').title()
+                context_section += f"\n## {readable_key}\n{value}\n"
+            
+            # Prepare the prompt with task and all context
+            full_prompt = f"""
+Task: {task_description}
+
+Available Context:
+{context_section}
+
+Template Instructions:
+{template_content}
+
+Based on the task description and all the available context above, generate a comprehensive final output that synthesizes all the information and provides actionable guidance.
+"""
+            
+            # Use LLM to generate final assembled output
+            if self.llm_manager:
+                try:
+                    raw_result = self.llm_manager.execute(
+                        full_prompt, 
+                        agent_name="prompt_assembly_agent"
+                    )
+                    
+                    # Clean the output to remove code block markers
+                    final_result = self._clean_llm_output(raw_result)
+                    
+                    # Create output directory
+                    self.output_dir.mkdir(exist_ok=True)
+                    
+                    # Generate filename with sequential numbering
+                    sequence_number = self._get_next_sequence_number()
+                    title = self._extract_title_from_content(final_result)
+                    
+                    # Fallback to task description if no title found
+                    if not title:
+                        title = task_description
+                    
+                    slug = self._slugify(title)
+                    filename = f"{sequence_number:03d}-{slug}.md"
+                    output_file = self.output_dir / filename
+                    
+                    # Write to file
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        f.write(final_result)
+                    
+                    print(f"Development specification saved to: {output_file}")
+                    
+                    # Store the result in context manager
+                    if self.context_manager is not None:
+                        self.context_manager.set('assembled_prompt', final_result)
+                        self.context_manager.set('output_file_path', str(output_file))
+                    
+                    return str(output_file)
+                    
+                except Exception as e:
+                    error_msg = f"LLM assembly failed: {e}"
+                    
+                    # Fallback to basic template result but still save to file
+                    basic_result = f"# Task: {task_description}\n\n## Error\nLLM assembly failed: {e}\n\n## Context Summary\n{context_section}"
+                    
+                    # Create output directory and save fallback result
+                    self.output_dir.mkdir(exist_ok=True)
+                    sequence_number = self._get_next_sequence_number()
+                    slug = self._slugify(task_description)
+                    filename = f"{sequence_number:03d}-{slug}-error.md"
+                    output_file = self.output_dir / filename
+                    
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        f.write(basic_result)
+                    
+                    print(f"Fallback specification saved to: {output_file}")
+                    
+                    if self.context_manager is not None:
+                        self.context_manager.set('assembled_prompt', basic_result)
+                        self.context_manager.set('prompt_assembly_error', error_msg)
+                        self.context_manager.set('output_file_path', str(output_file))
+                    
+                    return str(output_file)
+            else:
+                # No LLM available - create basic assembly but still save to file
+                basic_result = f"# Task: {task_description}\n\n## Notice\nNo LLM available for detailed analysis.\n\n## Context Summary\n{context_section}"
+                
+                # Create output directory and save basic result
+                self.output_dir.mkdir(exist_ok=True)
+                sequence_number = self._get_next_sequence_number()
+                slug = self._slugify(task_description)
+                filename = f"{sequence_number:03d}-{slug}-basic.md"
+                output_file = self.output_dir / filename
+                
+                with open(output_file, 'w', encoding='utf-8') as f:
+                    f.write(basic_result)
+                
+                print(f"Basic specification saved to: {output_file}")
+                
+                if self.context_manager is not None:
+                    self.context_manager.set('assembled_prompt', basic_result)
+                    self.context_manager.set('output_file_path', str(output_file))
+                
+                return str(output_file)
             
         except Exception as e:
             error_msg = f"Prompt assembly failed: {e}"
@@ -142,4 +307,4 @@ class PromptAssemblyAgent(BaseAgent):
             if self.context_manager is not None:
                 self.context_manager.set('prompt_assembly_error', error_msg)
             
-            raise Exception(error_msg)
+            return error_msg

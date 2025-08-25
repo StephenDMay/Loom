@@ -4,7 +4,10 @@
     "temperature": 0.4
   },
   "issue_generator": {
+    "description": "Configuration for issue generator agent",
     "output_format": "enhanced",
-    "include_examples": true
+    "include_examples": true,
+    "template_path": "templates/issue_generation_template.md",
+    "templates_directory": "templates"
   }
 }

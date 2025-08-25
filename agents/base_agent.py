@@ -23,6 +23,15 @@ class BaseAgent(ABC):
         self.llm_manager = llm_manager
         self.context_manager = context_manager
 
+    def _log_error(self, message: str):
+        """
+        Log error messages. Override this method to customize logging behavior.
+        
+        Args:
+            message (str): The error message to log.
+        """
+        print(f"ERROR [{self.__class__.__name__}]: {message}")
+
     @abstractmethod
     def execute(self, *args, **kwargs) -> Any:
         """

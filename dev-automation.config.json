@@ -32,6 +32,8 @@
     "auto_assign": true
   },
   "agent_execution_order": [
-    "issue_generator"
+    "project-analysis-agent",
+    "feature-research-agent",
+    "prompt-assembly-agent"
   ]
 }

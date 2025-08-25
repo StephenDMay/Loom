@@ -1,7 +1,7 @@
 {
   "llm": {
     "provider": "gemini",
-    "model": "gemini-pro",
+    "model": "gemini-2.0-flash-exp",
     "temperature": 0.3,
     "max_tokens": 4096,
     "top_p": 0.9
@@ -10,6 +10,8 @@
     "description": "Configuration for project analysis agent",
     "max_depth": 3,
     "project_root": ".",
+    "template_path": "templates/project_analysis_template.md",
+    "templates_directory": "templates",
     "ignore_patterns": [
       ".coverage",
       "*.log",
