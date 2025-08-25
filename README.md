@@ -43,6 +43,9 @@ cp ~/Loom/dev-automation.config.json .
 # Copy and configure the default template
 cp ~/Loom/meta-prompt-template.md .
 # Edit meta template to meet your project details, this is the default template used if specific ones are not provided at each step.
+
+# Configure the default LLM provider, Gemini
+export GEMINI_API_KEY="Your_API_Key"
 ```
 
 ### 3. Run Your First Agent Sequence
