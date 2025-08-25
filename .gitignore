@@ -19,3 +19,5 @@ venv/
 
 # Keep documentation
 !documentation/
+
+loom_venv/
