@@ -31,7 +31,28 @@ python --version
 pip install -r requirements.txt
 ```
 
-### 2. Configuration
+### 2. API Key Setup
+
+**🔑 Get your free Gemini API key:**
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Click "Create API key" 
+3. Copy your API key
+
+**🔧 Set up your environment:**
+```bash
+# Linux/Mac - add to your shell profile for persistence
+export GEMINI_API_KEY="your-api-key-here"
+echo 'export GEMINI_API_KEY="your-api-key-here"' >> ~/.bashrc
+
+# Windows Command Prompt
+setx GEMINI_API_KEY "your-api-key-here"
+
+# Windows PowerShell
+$env:GEMINI_API_KEY="your-api-key-here"
+[Environment]::SetEnvironmentVariable("GEMINI_API_KEY", "your-api-key-here", "User")
+```
+
+### 3. Configuration
 ```bash
 # Navigate to your project directory
 cd /path/to/your/project
@@ -44,20 +65,20 @@ cp ~/Loom/dev-automation.config.json .
 cp ~/Loom/meta-prompt-template.md .
 # Edit meta template to meet your project details, this is the default template used if specific ones are not provided at each step.
 
-# Configure the default LLM provider, Gemini
-export GEMINI_API_KEY="Your_API_Key"
+# Verify your API key is set
+echo $GEMINI_API_KEY  # Should show your API key
 ```
 
-### 3. Run Your First Agent Sequence
+### 4. Run Your First Agent Sequence
 ```bash
 # Basic usage - runs the configured agent sequence
 python ~/Loom/loom.py "implement user authentication system"
 
-# Validate your configuration
+# Validate your configuration and API key
 python ~/Loom/loom.py --validate-config
 ```
 
-### 4. Optional: Create Global Command
+### 5. Optional: Create Global Command
 **Windows:**
 Create `loom.bat` in a directory in your PATH:
 ```batch
@@ -129,10 +150,12 @@ Each project gets its own `dev-automation.config.json` file that configures the 
 ```json
 {
   "llm_settings": {
-    "default_provider": "gemini",     # gemini, claude-code, openai
-    "output_format": "structured",    # structured, conversational, json
-    "research_depth": "standard",     # brief, standard, comprehensive
-    "temperature": 0.7
+    "default_provider": "gemini",
+    "model": "gemini-2.0-flash-exp",
+    "temperature": 0.6,
+    "max_tokens": 8192,
+    "output_format": "structured",
+    "research_depth": "standard"
   }
 }
 ```
@@ -276,24 +299,59 @@ Each generated issue includes:
 ## 🛡️ Dependencies
 
 ### Required
-- **Python 3.7+**: Uses only standard library (no pip packages needed)
-- **LLM CLI tool** (one of):
-  - `gemini` (npm package: `npm install -g @google/generative-ai-cli`)
-  - `claude-code` for Anthropic Claude  
-  - `openai` for OpenAI GPT
+- **Python 3.7+**: Core runtime
+- **google-generativeai**: Python package for Gemini API access
+- **Gemini API Key**: Free API key from Google AI Studio
 
 ### Optional
 - **GitHub CLI (`gh`)**: For automated issue creation
 - **Git**: For repository context (auto-detected)
 
-### Installation Notes
-**Windows**: Ensure Python is in your PATH. NPM-installed tools like `gemini` need the `.cmd` extension but this is handled automatically.
+### API Key Setup
+1. **Get your Gemini API key**: Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. **Set environment variable**: 
+   ```bash
+   # Linux/Mac
+   export GEMINI_API_KEY="your-api-key-here"
+   echo 'export GEMINI_API_KEY="your-api-key-here"' >> ~/.bashrc
+   
+   # Windows
+   setx GEMINI_API_KEY "your-api-key-here"
+   ```
+3. **Verify setup**: `python loom.py --validate-config`
 
-**Mac/Linux**: Standard Python installation should work out of the box.
+## 🔧 Troubleshooting
+
+### Common Issues
+
+**"GEMINI_API_KEY environment variable not set"**
+```bash
+# Verify your API key is set
+echo $GEMINI_API_KEY
+
+# If empty, set it:
+export GEMINI_API_KEY="your-api-key-here"
+```
+
+**"google-generativeai package not installed"**
+```bash
+pip install google-generativeai
+```
+
+**"Gemini API call failed"**
+- Check your API key is valid at [Google AI Studio](https://aistudio.google.com/app/apikey)
+- Verify you haven't exceeded API quotas
+- Ensure you have internet connectivity
+
+**Configuration validation fails**
+```bash
+# Run validation to see specific issues
+python loom.py --validate-config
+```
 
 ## 🚧 Roadmap
 
-- [ ] **Multiple LLM Comparison** - Generate issues with multiple providers and compare
+- [ ] **Multiple LLM Support** - Add OpenAI, Claude, and local model providers
 - [ ] **Template Marketplace** - Share and discover project-specific templates
 - [ ] **Progress Tracking** - Monitor implementation progress and outcomes
 - [ ] **Team Collaboration** - Shared configurations and team workflows

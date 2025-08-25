@@ -1,23 +1,14 @@
 import os
-import platform
-import subprocess
 from typing import Optional, Dict, Any
 from core.config_manager import ConfigManager
 
 class LLMManager:
     """
-    Centralized manager for Large Language Model interactions using CLI-first approach.
+    Centralized manager for Large Language Model interactions using API-only approach.
     """
     
     def __init__(self, config_manager: ConfigManager):
         self.config_manager = config_manager
-        self.execution_mode = config_manager.get("llm_settings.execution_mode", "cli")
-        
-        # Provider CLI mapping
-        self.provider_commands = {
-            "gemini": "gemini",
-            "claude": "claude"
-        }
     
     def execute(self, prompt: str, agent_name: str = None, provider: str = None, 
                 temperature: float = None, **kwargs) -> str:
@@ -29,104 +20,19 @@ class LLMManager:
         
         resolved_config = self._resolve_configuration(agent_name, provider, temperature, **kwargs)
         
-        if self.execution_mode == "api":
-            return self._execute_api_call(prompt, resolved_config)
-        else:
-            return self._execute_cli_call(prompt, resolved_config)
-
-    def _execute_cli_call(self, prompt: str, config: Dict[str, Any]) -> str:
-        """Execute LLM call using CLI tools."""
-        provider = config['provider']
-        
-        if provider not in self.provider_commands:
-            available = ", ".join(self.provider_commands.keys())
-            raise ValueError(f"Unsupported provider '{provider}'. Available: {available}")
-        
-        # Claude doesn't support simple stdin/stdout like Gemini, so use API mode
-        if provider == "claude":
-            print("Note: Claude CLI doesn't support simple prompt mode, using API...")
-            return self._execute_api_call(prompt, config)
-        
-        cmd = self.provider_commands[provider]
-        
-        # Handle Windows .cmd extension for npm-installed tools
-        if platform.system() == "Windows" and provider == "gemini":
-            cmd += ".cmd"
-        
-        try:
-            # Check if provider is available
-            if not self._validate_provider_availability(provider):
-                self._prompt_user_for_missing_provider(provider)
-                raise RuntimeError(f"Provider '{provider}' is not available")
-            
-            print(f"Executing LLM call with provider: {provider}")
-            
-            result = subprocess.run(
-                [cmd],
-                input=prompt,
-                text=True,
-                capture_output=True,
-                check=True,
-                timeout=300  # 5 minute timeout
-            )
-            
-            return result.stdout.strip()
-            
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(f"LLM call timed out after 5 minutes")
-        except subprocess.CalledProcessError as e:
-            error_msg = f"LLM provider '{provider}' failed with exit code {e.returncode}"
-            if e.stderr:
-                error_msg += f"\nError details: {e.stderr}"
-            raise RuntimeError(error_msg)
-        except FileNotFoundError:
-            self._prompt_user_for_missing_provider(provider)
-            raise RuntimeError(f"LLM provider '{provider}' not found in PATH")
+        return self._execute_api_call(prompt, resolved_config)
 
     def _execute_api_call(self, prompt: str, config: Dict[str, Any]) -> str:
-        """Execute LLM call using API (future implementation)."""
+        """Execute LLM call using API."""
         provider = config['provider']
         
         if provider == "gemini":
             return self._execute_gemini_api(prompt, config)
-        elif provider == "claude":
-            return self._execute_claude_api(prompt, config)
         else:
-            raise NotImplementedError(f"API mode not yet implemented for provider: {provider}")
-
-    def _execute_claude_api(self, prompt: str, config: Dict[str, Any]) -> str:
-        """Execute Claude API call."""
-        try:
-            import anthropic
-        except ImportError:
-            raise ImportError("anthropic package not installed. Install with: pip install anthropic")
-
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise ValueError("ANTHROPIC_API_KEY environment variable not set")
-        
-        client = anthropic.Anthropic(api_key=api_key)
-        
-        model_name = config.get('model', 'claude-3-5-sonnet-20241022')
-        temperature = config.get('temperature', 0.7)
-        max_tokens = config.get('max_tokens', 8192)
-        
-        # Claude temperature is 0-1, so clamp if necessary
-        temperature = min(max(temperature, 0.0), 1.0)
-        
-        response = client.messages.create(
-            model=model_name,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        
-        return response.content[0].text
+            raise ValueError(f"Unsupported provider: {provider}. Only 'gemini' is supported.")
 
     def _execute_gemini_api(self, prompt: str, config: Dict[str, Any]) -> str:
-        """Execute Gemini API call (existing implementation)."""
+        """Execute Gemini API call."""
         try:
             import google.generativeai as genai
         except ImportError:
@@ -148,38 +54,13 @@ class LLMManager:
         model_name = config.get('model', 'gemini-2.0-flash-exp')
         model = genai.GenerativeModel(model_name)
         
-        response = model.generate_content(prompt, generation_config=generation_config)
-        return response.text
-
-    def _validate_provider_availability(self, provider: str) -> bool:
-        """Check if provider CLI tool is available."""
-        cmd = self.provider_commands.get(provider)
-        if not cmd:
-            return False
-        
-        if platform.system() == "Windows" and provider == "gemini":
-            cmd += ".cmd"
+        print(f"Executing LLM call with Gemini model: {model_name}")
         
         try:
-            # Try a simple command to check availability
-            subprocess.run([cmd, "--help"], capture_output=True, check=True, timeout=10)
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            return False
-
-    def _prompt_user_for_missing_provider(self, provider: str):
-        """Provide helpful error message for missing provider."""
-        install_instructions = {
-            "gemini": "Install with: npm install -g @google-ai/generativelanguage-cli",
-            "claude": "Install with: npm install -g @anthropic-ai/claude-code"
-        }
-        
-        instruction = install_instructions.get(provider, f"Install {provider} CLI tool")
-        
-        print(f"\n❌ Error: {provider} CLI tool not found")
-        print(f"📦 {instruction}")
-        print(f"🔧 Make sure the tool is installed and available in your PATH")
-        print(f"💡 You can also switch providers in your dev-automation.config.json")
+            response = model.generate_content(prompt, generation_config=generation_config)
+            return response.text
+        except Exception as e:
+            raise RuntimeError(f"Gemini API call failed: {str(e)}")
 
     def _resolve_configuration(self, agent_name: str = None, provider: str = None, 
                               temperature: float = None, **kwargs) -> Dict[str, Any]:
@@ -235,9 +116,23 @@ class LLMManager:
     def get_available_providers(self) -> Dict[str, bool]:
         """Get list of providers and their availability status."""
         return {
-            provider: self._validate_provider_availability(provider)
-            for provider in self.provider_commands.keys()
+            "gemini": self._validate_gemini_availability()
         }
+
+    def _validate_gemini_availability(self) -> bool:
+        """Check if Gemini API is available."""
+        api_key = os.getenv("GEMINI_API_KEY")
+        if not api_key:
+            return False
+        
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            # Try to list models to validate API key works
+            list(genai.list_models())
+            return True
+        except Exception:
+            return False
 
     def validate_config(self) -> Dict[str, Any]:
         """Validate current configuration and provider availability."""
@@ -246,7 +141,6 @@ class LLMManager:
         
         return {
             "default_provider": default_provider,
-            "execution_mode": self.execution_mode,
             "available_providers": provider_status,
             "default_provider_available": provider_status.get(default_provider, False)
         }

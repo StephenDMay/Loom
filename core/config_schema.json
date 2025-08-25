@@ -37,12 +37,7 @@
       "properties": {
         "default_provider": {
           "type": "string",
-          "enum": ["gemini", "claude"]
-        },
-        "execution_mode": {
-          "type": "string",
-          "enum": ["cli", "api"],
-          "default": "cli"
+          "enum": ["gemini"]
         },
         "model": { "type": "string" },
         "output_format": { "type": "string" },

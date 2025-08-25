@@ -18,9 +18,11 @@
   },
   "llm_settings": {
     "default_provider": "gemini",
+    "model": "gemini-2.0-flash-exp",
+    "temperature": 0.6,
+    "max_tokens": 8192,
     "output_format": "structured",
-    "research_depth": "standard",
-    "temperature": 0.6
+    "research_depth": "standard"
   },
   "templates": {
     "directories": []

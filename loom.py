@@ -20,7 +20,6 @@ def validate_configuration(config_manager: ConfigManager, llm_manager: LLMManage
     validation_result = llm_manager.validate_config()
     
     print(f"📝 Default provider: {validation_result['default_provider']}")
-    print(f"⚙️  Execution mode: {validation_result['execution_mode']}")
     print()
     
     print("🔧 Provider availability:")

@@ -1,7 +1,7 @@
 {
   "llm": {
     "provider": "gemini",
-    "model": "gemini-pro",
+    "model": "gemini-2.0-flash-exp",
     "temperature": 0.3,
     "max_tokens": 4096,
     "top_p": 0.9
