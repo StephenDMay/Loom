@@ -1,7 +1,9 @@
 import unittest
 import json
 import os
+import logging
 from pathlib import Path
+from unittest.mock import patch, Mock
 from core.config_manager import ConfigManager, ConfigValidationError
 
 class TestConfigManager(unittest.TestCase):
@@ -284,6 +286,142 @@ class TestConfigManager(unittest.TestCase):
         # Test with empty config
         execution_order = self.config_manager.get_agent_execution_order()
         self.assertEqual(execution_order, [])
+    
+    def test_configure_logging_with_valid_log_level(self):
+        """Test logging configuration with valid log level."""
+        # Reset singleton and logging configured flag
+        ConfigManager._instance = None
+        config_data = self.base_valid_config_data.copy()
+        config_data['log_level'] = 'debug'
+        
+        config_path = self.test_dir / 'config_with_log_level.json'
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        with patch('logging.basicConfig') as mock_basic_config:
+            config_manager = ConfigManager()
+            config_manager.load_config(str(config_path))
+            
+            # Verify basicConfig was called with DEBUG level
+            mock_basic_config.assert_called_with(
+                level=logging.DEBUG,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                force=True
+            )
+    
+    def test_configure_logging_with_invalid_log_level(self):
+        """Test logging configuration falls back gracefully with invalid log level."""
+        # Reset singleton and logging configured flag
+        ConfigManager._instance = None
+        config_data = self.base_valid_config_data.copy()
+        config_data['log_level'] = 'invalid_level'
+        
+        config_path = self.test_dir / 'config_with_invalid_log_level.json'
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        # This should raise a ConfigValidationError due to schema validation
+        config_manager = ConfigManager()
+        with self.assertRaises(ConfigValidationError) as cm:
+            config_manager.load_config(str(config_path))
+        
+        # Verify the error message contains the validation error
+        self.assertIn("'invalid_level' is not one of", str(cm.exception))
+    
+    def test_configure_logging_with_agent_specific_levels(self):
+        """Test logging configuration with agent-specific log levels."""
+        # Reset singleton and logging configured flag
+        ConfigManager._instance = None
+        config_data = self.base_valid_config_data.copy()
+        config_data['log_level'] = 'info'
+        config_data['agents'] = {
+            'directory': str(self.agents_dir),
+            'test_agent': {
+                'log_level': 'debug'
+            },
+            'another_agent': {
+                'log_level': 'error'
+            }
+        }
+        
+        config_path = self.test_dir / 'config_with_agent_log_levels.json'
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        with patch('logging.basicConfig'):
+            with patch('logging.getLogger') as mock_get_logger:
+                mock_logger1 = Mock()
+                mock_logger2 = Mock()
+                mock_get_logger.side_effect = lambda name: {
+                    'agents.test_agent': mock_logger1,
+                    'agents.another_agent': mock_logger2
+                }.get(name, Mock())
+                
+                config_manager = ConfigManager()
+                config_manager.load_config(str(config_path))
+                
+                # Verify agent loggers were configured with specific levels
+                mock_logger1.setLevel.assert_called_with(logging.DEBUG)
+                mock_logger2.setLevel.assert_called_with(logging.ERROR)
+    
+    def test_configure_logging_with_agent_invalid_log_level(self):
+        """Test agent-specific logging with invalid log level fails schema validation."""
+        # Reset singleton and logging configured flag
+        ConfigManager._instance = None
+        config_data = self.base_valid_config_data.copy()
+        config_data['log_level'] = 'info'
+        config_data['agents'] = {
+            'directory': str(self.agents_dir),
+            'test_agent': {
+                'log_level': 'invalid'
+            }
+        }
+        
+        config_path = self.test_dir / 'config_with_invalid_agent_log_level.json'
+        with open(config_path, 'w') as f:
+            json.dump(config_data, f)
+        
+        # This should raise a ConfigValidationError due to schema validation
+        config_manager = ConfigManager()
+        with self.assertRaises(ConfigValidationError) as cm:
+            config_manager.load_config(str(config_path))
+        
+        # Verify the error message contains the validation error
+        self.assertIn("'invalid' is not one of", str(cm.exception))
+    
+    def test_configure_logging_called_only_once(self):
+        """Test that logging configuration is called only once."""
+        # Reset singleton
+        ConfigManager._instance = None
+        config_manager = ConfigManager()
+        
+        with patch('logging.basicConfig') as mock_basic_config:
+            # First call should configure logging
+            config_manager.configure_logging()
+            self.assertTrue(mock_basic_config.called)
+            
+            # Reset mock
+            mock_basic_config.reset_mock()
+            
+            # Second call should not configure logging again
+            config_manager.configure_logging()
+            self.assertFalse(mock_basic_config.called)
+    
+    def test_configure_logging_without_log_level_config(self):
+        """Test logging configuration with default log level when not specified in config."""
+        # Reset singleton
+        ConfigManager._instance = None
+        
+        with patch('logging.basicConfig') as mock_basic_config:
+            config_manager = ConfigManager()
+            config_manager.load_config(str(self.valid_config_path))  # Config without log_level
+            
+            # Should use default INFO level
+            mock_basic_config.assert_called_with(
+                level=logging.INFO,
+                format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                force=True
+            )
 
 
 if __name__ == '__main__':

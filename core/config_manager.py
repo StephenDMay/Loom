@@ -1,6 +1,7 @@
 import json
 from typing import Any, Dict
 import copy
+import logging
 from pathlib import Path
 
 from jsonschema import validate, ValidationError
@@ -19,6 +20,7 @@ class ConfigManager:
             cls._instance = super(ConfigManager, cls).__new__(cls)
             cls._instance._load_schema()
             cls._config = {} # Initialize _config for the new instance
+            cls._instance._logging_configured = False
         return cls._instance
 
     def _load_schema(self) -> None:
@@ -42,11 +44,54 @@ class ConfigManager:
                 loaded_config = json.load(f)
             self._validate_config(loaded_config)
             self._config = loaded_config
+            # Configure logging after loading config
+            self.configure_logging()
         except FileNotFoundError:
             # It's okay for the global config to not exist, just means we have an empty config
             self._config = {}
+            # Still configure logging with defaults
+            self.configure_logging()
         except json.JSONDecodeError as e:
             raise ValueError(f"Malformed JSON in configuration file: {config_path} - {e}")
+
+    def configure_logging(self) -> None:
+        """
+        Configures logging based on the loaded configuration.
+        Sets up global log level and agent-specific log levels.
+        """
+        if self._logging_configured:
+            return
+        
+        # Get global log level from config, default to 'info'
+        log_level = self.get("log_level", "info").upper()
+        
+        # Configure basic logging
+        try:
+            numeric_level = getattr(logging, log_level)
+        except AttributeError:
+            print(f"Warning: Invalid log level '{log_level}'. Using INFO level.")
+            numeric_level = logging.INFO
+        
+        # Configure root logger with a specific format
+        logging.basicConfig(
+            level=numeric_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            force=True  # Override any existing configuration
+        )
+        
+        # Configure agent-specific log levels
+        agents_config = self.get("agents", {})
+        for agent_name, agent_config in agents_config.items():
+            if isinstance(agent_config, dict) and 'log_level' in agent_config:
+                agent_log_level = agent_config['log_level'].upper()
+                logger = logging.getLogger(f"agents.{agent_name}")
+                try:
+                    logger.setLevel(getattr(logging, agent_log_level))
+                except AttributeError:
+                    print(f"Warning: Invalid log level '{agent_log_level}' for agent '{agent_name}'. Using global level.")
+                    logger.setLevel(numeric_level)
+        
+        self._logging_configured = True
 
     def _validate_config(self, config: Dict[str, Any]) -> None:
         """

@@ -205,17 +205,17 @@ class PromptAssemblyAgent(BaseAgent):
             
             # Prepare the prompt with task and all context
             full_prompt = f"""
-Task: {task_description}
+                Task: {task_description}
 
-Available Context:
-{context_section}
+                Available Context:
+                {context_section}
 
-Template Instructions:
-{template_content}
+                Template Instructions:
+                {template_content}
 
-Based on the task description and all the available context above, generate a comprehensive final output that synthesizes all the information and provides actionable guidance.
-"""
-            
+                Based on the task description and all the available context above, generate a comprehensive final output that synthesizes all the information and provides actionable guidance.
+                """
+                        
             # Use LLM to generate final assembled output
             if self.llm_manager:
                 try:

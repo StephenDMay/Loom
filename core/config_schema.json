@@ -74,12 +74,28 @@
       "type": "array",
       "items": { "type": "string" }
     },
+    "log_level": {
+      "type": "string",
+      "enum": ["debug", "info", "warning", "error", "critical"],
+      "default": "info",
+      "description": "The global log level for the application."
+    },
     "agents": {
       "type": "object",
       "properties": {
         "directory": { "type": "string" }
       },
-      "additionalProperties": false
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "log_level": {
+            "type": "string",
+            "enum": ["debug", "info", "warning", "error", "critical"],
+            "description": "The log level for the specific agent."
+          }
+        },
+        "additionalProperties": true
+      }
     }
   },
   "required": ["project", "github", "llm_settings", "templates", "automation", "agent_execution_order"],
