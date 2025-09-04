@@ -9,7 +9,7 @@ Designed for developers who want to automate the software development lifecycle 
 Loom orchestrates a sequence of specialized AI agents to perform a series of tasks, starting with a simple feature request.
 
 **Example Workflow:**
-1. **You provide a task**: `python loom.py "implement real-time tournament bracket tracking"`
+1. **You provide a task**: `python loom.py "implement JWT user authentication"`
 2. **Project Analysis Agent**: Scans your codebase to understand existing patterns, tech stack, and conventions.
 3. **Feature Research Agent**: Uses the project context to research the best technical approaches and implementation strategies for the feature.
 4. **Prompt Assembly Agent**: Synthesizes all the gathered information into a detailed, context-aware coding prompt, ready for an implementation LLM.
